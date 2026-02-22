@@ -1,5 +1,5 @@
 // The exact deployment link you provided
-const API_URL = "https://script.google.com/macros/s/AKfycbwKKL0vDKBWn38VNrrT8_kejBiEQgB5Y6kc0fRs5-8-kWM28fPX7QcFiGAPOPN29i-u/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwtaFW_1JwEU2rco-sQvmJBwoGufI_sk9W_iCh7XjBddQG1kYXB7j7YU5GNYBROoWYh/exec";
 
 let siteData = {
     videos: [],
