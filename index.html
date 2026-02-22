@@ -7,6 +7,41 @@
     <link rel="stylesheet" href="styles.css">
     
     <style>
+        /* --- MEDIA GRID & DYNAMIC ASPECT RATIO CARDS --- */
+        .grid-container {
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px; 
+            padding: 0 40px 60px 40px; 
+            max-width: 1400px; 
+            margin: 0 auto;
+            align-items: center; /* Keeps cards centered if the row height changes */
+        }
+
+        .media-card {
+            position: relative; 
+            background-color: #0a0a0a; 
+            border: 1px solid #1a1a1a;
+            border-radius: 6px;
+            overflow: hidden; 
+            aspect-ratio: 16 / 9; /* Default hidden state */
+            cursor: pointer; 
+            /* The magic: Smoothly animate the aspect ratio and scale */
+            transition: aspect-ratio 0.5s cubic-bezier(0.25, 1, 0.5, 1), 
+                        transform 0.5s cubic-bezier(0.25, 1, 0.5, 1), 
+                        border-color 0.3s ease, 
+                        box-shadow 0.3s ease;
+            z-index: 1;
+        }
+
+        .media-card:hover {
+            aspect-ratio: 9 / 16; /* Expands to full vertical video ratio */
+            transform: scale(1.05); /* Slight pop out effect */
+            border-color: #444;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.9);
+            z-index: 10;
+        }
+
         /* --- CORE MODAL STYLES --- */
         .modal {
             position: fixed !important; top: 0 !important; left: 0 !important; 
@@ -34,7 +69,7 @@
         }
         .close-btn:hover { color: #ff4444; }
 
-        /* --- NEW CUSTOM DOWNLOAD BUTTON --- */
+        /* --- CUSTOM DOWNLOAD BUTTON --- */
         .download-btn {
             position: absolute; top: -38px; right: 50px;
             color: #888; font-size: 1rem; cursor: pointer;
@@ -57,15 +92,19 @@
         
         /* Blocks right-click and long-press saving */
         #modal-body video, #modal-body img, .media-card video, .media-card img {
-            width: 100%; height: auto; display: block; max-height: 85vh;
-            object-fit: contain; border-radius: 8px;
-            -webkit-touch-callout: none; /* iOS Safari */
-            -webkit-user-select: none; /* Safari */
-            -khtml-user-select: none; /* Konqueror HTML */
-            -moz-user-select: none; /* Old versions of Firefox */
-            -ms-user-select: none; /* Internet Explorer/Edge */
+            width: 100%; height: 100%; display: block; max-height: 85vh;
+            object-fit: cover; border-radius: 8px;
+            -webkit-touch-callout: none; 
+            -webkit-user-select: none; 
+            -khtml-user-select: none; 
+            -moz-user-select: none; 
+            -ms-user-select: none; 
             user-select: none;
             -webkit-user-drag: none;
+        }
+
+        #modal-body video, #modal-body img {
+            object-fit: contain; /* Full video uncropped in modal */
         }
 
         .lore-description {
@@ -198,10 +237,9 @@
             items.forEach((item, index) => {
                 const card = document.createElement('div');
                 card.className = 'media-card';
-                // Block right click on individual cards just in case
                 card.oncontextmenu = () => false; 
 
-                // TITLES REMOVED COMPLETELY
+                // Pure media, no titles
                 let mediaElement = category === 'videos' 
                     ? `<video muted loop playsinline preload="metadata" oncontextmenu="return false;"><source src="${item.url}" type="video/mp4"></video>`
                     : `<img src="${item.url}" alt="evidence" loading="lazy" oncontextmenu="return false;">`;
@@ -209,22 +247,21 @@
                 card.innerHTML = mediaElement;
                 gridContainer.appendChild(card);
 
-                // --- PURE SNAPSHOT PREVIEW (NO PLAYING) ---
+                // Pure snapshot preview for videos
                 if (category === 'videos') {
                     const vid = card.querySelector('video');
                     let previewInterval;
                     
                     card.addEventListener('mouseenter', () => {
-                        vid.pause(); // Ensure it doesn't play
-                        // Rapidly jump timestamps to simulate scrubbing/snapshots
+                        vid.pause(); 
                         previewInterval = setInterval(() => {
                             if (vid.duration) { vid.currentTime = Math.random() * vid.duration; }
-                        }, 500); // 500ms jumps for a fast snapshot effect
+                        }, 500); 
                     });
                     
                     card.addEventListener('mouseleave', () => {
                         clearInterval(previewInterval);
-                        vid.currentTime = 0; // Reset to start
+                        vid.currentTime = 0; 
                     });
                 }
 
@@ -245,7 +282,6 @@
             const items = siteData[currentTab];
             const currentItem = items[currentMediaIndex];
 
-            // Added controlsList="nodownload" to hide the default browser download button
             if (currentTab === 'videos') {
                 modalBody.innerHTML = `<video src="${currentItem.url}" controls controlsList="nodownload" autoplay oncontextmenu="return false;"></video>`;
             } else {
@@ -253,7 +289,7 @@
             }
         }
 
-        // --- RANDOMIZED DOWNLOAD SCRAMBLER ---
+        // Randomized Download Encrypter
         function generateRandomName() {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
             let result = '';
@@ -272,12 +308,10 @@
             const randomFileName = generateRandomName() + fileExtension;
 
             try {
-                // Fetch the file as a raw blob so we can force the name
                 const response = await fetch(currentItem.url);
                 const blob = await response.blob();
                 const blobUrl = window.URL.createObjectURL(blob);
                 
-                // Create invisible link and force download
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = blobUrl;
@@ -285,12 +319,10 @@
                 document.body.appendChild(a);
                 a.click();
                 
-                // Clean up
                 window.URL.revokeObjectURL(blobUrl);
                 a.remove();
             } catch (err) {
                 console.error("Download failed:", err);
-                // Fallback if browser blocks Blob fetch
                 const a = document.createElement('a');
                 a.href = currentItem.url;
                 a.download = randomFileName;
