@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css">
     
     <style>
-        /* --- MEDIA GRID & DYNAMIC ASPECT RATIO CARDS --- */
+        /* --- MEDIA GRID & DYNAMIC ROW ASPECT RATIO --- */
         .grid-container {
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -15,7 +15,7 @@
             padding: 0 40px 60px 40px; 
             max-width: 1400px; 
             margin: 0 auto;
-            align-items: center; /* Keeps cards centered if the row height changes */
+            align-items: center; 
         }
 
         .media-card {
@@ -26,7 +26,7 @@
             overflow: hidden; 
             aspect-ratio: 16 / 9; /* Default hidden state */
             cursor: pointer; 
-            /* The magic: Smoothly animate the aspect ratio and scale */
+            /* Smooth transitions for the row expansion */
             transition: aspect-ratio 0.5s cubic-bezier(0.25, 1, 0.5, 1), 
                         transform 0.5s cubic-bezier(0.25, 1, 0.5, 1), 
                         border-color 0.3s ease, 
@@ -34,12 +34,18 @@
             z-index: 1;
         }
 
-        .media-card:hover {
+        /* NEW: We use a JS-applied class instead of :hover to trigger the whole row */
+        .media-card.expanded-row {
             aspect-ratio: 9 / 16; /* Expands to full vertical video ratio */
-            transform: scale(1.05); /* Slight pop out effect */
             border-color: #444;
             box-shadow: 0 15px 40px rgba(0,0,0,0.9);
             z-index: 10;
+        }
+
+        /* Gives a slight pop to the specific card you are hovering inside the expanded row */
+        .media-card.expanded-row:hover {
+            transform: scale(1.03); 
+            border-color: #777;
         }
 
         /* --- CORE MODAL STYLES --- */
@@ -271,6 +277,33 @@
                 });
             });
         }
+
+        // --- NEW: DYNAMIC ROW HOVER LOGIC ---
+        // This calculates which cards are on the same visual row and expands them together
+        gridContainer.addEventListener('mouseover', (e) => {
+            const hoveredCard = e.target.closest('.media-card');
+            
+            if (hoveredCard && !hoveredCard.classList.contains('expanded-row')) {
+                const targetOffset = hoveredCard.offsetTop;
+                const allCards = gridContainer.querySelectorAll('.media-card');
+                
+                allCards.forEach(card => {
+                    // If the card shares the same Y-axis position (with a tiny 20px tolerance), it's in the same row
+                    if (Math.abs(card.offsetTop - targetOffset) < 20) {
+                        card.classList.add('expanded-row');
+                    } else {
+                        card.classList.remove('expanded-row');
+                    }
+                });
+            }
+        });
+
+        // When leaving the grid entirely, shrink everything back to normal
+        gridContainer.addEventListener('mouseleave', () => {
+            gridContainer.querySelectorAll('.media-card').forEach(card => {
+                card.classList.remove('expanded-row');
+            });
+        });
 
         function openModal() {
             modal.classList.remove('hidden');
