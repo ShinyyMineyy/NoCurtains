@@ -16,7 +16,7 @@ const tabButtons = document.querySelectorAll('.tab-btn');
 // Initialize the database connection
 async function fetchDatabase() {
     try {
-        const response = await fetch(API_URL);
+        const response = await fetch(API_URL, { redirect: "follow" });
         const data = await response.json();
         
         siteData.videos = data.videos || [];
