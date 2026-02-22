@@ -61,3 +61,27 @@ header {
     color: #ccc; font-size: 0.85rem; pointer-events: none;
 }
 .media-title { display: block; font-weight: bold; color: #fff; margin-bottom: 4px; }
+/* --- MODAL (POP-UP) STYLES --- */
+.modal {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background-color: rgba(0, 0, 0, 0.95);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 10000; opacity: 1; transition: opacity 0.3s ease;
+}
+.modal.hidden {
+    opacity: 0; pointer-events: none;
+}
+.modal-content {
+    position: relative; width: 90%; max-width: 1000px;
+    background: #000; border: 1px solid #333;
+    box-shadow: 0 0 40px rgba(0,0,0,0.8);
+}
+.close-btn {
+    position: absolute; top: -40px; right: 0;
+    color: #fff; font-size: 2rem; cursor: pointer;
+    transition: color 0.3s ease; font-family: sans-serif;
+}
+.close-btn:hover { color: #8a0000; }
+#modal-body video, #modal-body img {
+    width: 100%; height: auto; display: block; max-height: 85vh; object-fit: contain;
+}
