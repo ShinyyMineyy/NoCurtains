@@ -25,6 +25,7 @@
             transform: scale(1); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .modal.hidden .modal-content { transform: scale(0.8); }
+        
         .close-btn {
             position: absolute; top: -45px; right: 0;
             color: #fff; font-size: 2.5rem; cursor: pointer;
@@ -32,6 +33,17 @@
             text-shadow: 0 2px 10px rgba(0,0,0,0.5); z-index: 10002;
         }
         .close-btn:hover { color: #ff4444; }
+
+        /* --- NEW CUSTOM DOWNLOAD BUTTON --- */
+        .download-btn {
+            position: absolute; top: -38px; right: 50px;
+            color: #888; font-size: 1rem; cursor: pointer;
+            transition: color 0.3s ease; font-family: 'Courier New', Courier, monospace;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5); z-index: 10002;
+            background: none; border: none; letter-spacing: 2px;
+        }
+        .download-btn:hover { color: #fff; }
+
         .nav-btn {
             position: absolute; top: 50%; transform: translateY(-50%);
             color: rgba(255, 255, 255, 0.5); font-size: 3rem; 
@@ -42,12 +54,20 @@
         .prev-btn { left: -80px; } .next-btn { right: -80px; }
         @media (max-width: 1200px) { .prev-btn { left: -20px; } .next-btn { right: -20px; } }
         #modal-body { width: 100%; display: flex; justify-content: center; align-items: center; }
-        #modal-body video, #modal-body img {
+        
+        /* Blocks right-click and long-press saving */
+        #modal-body video, #modal-body img, .media-card video, .media-card img {
             width: 100%; height: auto; display: block; max-height: 85vh;
             object-fit: contain; border-radius: 8px;
+            -webkit-touch-callout: none; /* iOS Safari */
+            -webkit-user-select: none; /* Safari */
+            -khtml-user-select: none; /* Konqueror HTML */
+            -moz-user-select: none; /* Old versions of Firefox */
+            -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none;
+            -webkit-user-drag: none;
         }
 
-        /* --- NEW HEADER LORE & WARNING BANNER --- */
         .lore-description {
             color: #888; font-size: 0.95rem; margin: 20px auto 0; 
             letter-spacing: 1px; max-width: 600px; line-height: 1.5;
@@ -71,7 +91,7 @@
         }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
     <div class="noise-overlay"></div>
     
     <header>
@@ -98,7 +118,8 @@
 
         <div id="media-modal" class="modal hidden">
             <div class="modal-content">
-                <span class="close-btn">&times;</span>
+                <span class="close-btn" title="Close">&times;</span>
+                <button class="download-btn" id="secure-download" title="Download Evidence">[ DOWNLOAD ]</button>
                 <span class="nav-btn prev-btn" id="prev-media">&#10094;</span>
                 <span class="nav-btn next-btn" id="next-media">&#10095;</span>
                 <div id="modal-body"></div>
@@ -123,6 +144,7 @@
         const modal = document.getElementById('media-modal');
         const modalBody = document.getElementById('modal-body');
         const closeBtn = document.querySelector('.close-btn');
+        const downloadBtn = document.getElementById('secure-download');
 
         async function fetchDirectory(url) {
             try {
@@ -134,8 +156,7 @@
                 const data = await response.json();
                 
                 return data.filter(item => item.type === 'file').map(file => {
-                    let cleanTitle = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-                    return { title: cleanTitle, url: file.download_url };
+                    return { url: file.download_url, name: file.name };
                 });
             } catch (error) {
                 console.error("Fetch failed:", error);
@@ -177,33 +198,33 @@
             items.forEach((item, index) => {
                 const card = document.createElement('div');
                 card.className = 'media-card';
+                // Block right click on individual cards just in case
+                card.oncontextmenu = () => false; 
 
+                // TITLES REMOVED COMPLETELY
                 let mediaElement = category === 'videos' 
-                    ? `<video muted loop playsinline preload="metadata"><source src="${item.url}" type="video/mp4"></video>`
-                    : `<img src="${item.url}" alt="${item.title}" loading="lazy">`;
+                    ? `<video muted loop playsinline preload="metadata" oncontextmenu="return false;"><source src="${item.url}" type="video/mp4"></video>`
+                    : `<img src="${item.url}" alt="evidence" loading="lazy" oncontextmenu="return false;">`;
 
-                card.innerHTML = `
-                    ${mediaElement}
-                    <div class="media-info">
-                        <span class="media-title">${item.title}</span>
-                    </div>
-                `;
+                card.innerHTML = mediaElement;
                 gridContainer.appendChild(card);
 
+                // --- PURE SNAPSHOT PREVIEW (NO PLAYING) ---
                 if (category === 'videos') {
                     const vid = card.querySelector('video');
                     let previewInterval;
+                    
                     card.addEventListener('mouseenter', () => {
-                        let playPromise = vid.play();
-                        if (playPromise !== undefined) playPromise.catch(e => console.log("Autoplay blocked:", e));
+                        vid.pause(); // Ensure it doesn't play
+                        // Rapidly jump timestamps to simulate scrubbing/snapshots
                         previewInterval = setInterval(() => {
                             if (vid.duration) { vid.currentTime = Math.random() * vid.duration; }
-                        }, 800);
+                        }, 500); // 500ms jumps for a fast snapshot effect
                     });
+                    
                     card.addEventListener('mouseleave', () => {
                         clearInterval(previewInterval);
-                        vid.pause();
-                        vid.currentTime = 0; 
+                        vid.currentTime = 0; // Reset to start
                     });
                 }
 
@@ -217,7 +238,6 @@
         function openModal() {
             modal.classList.remove('hidden');
             loadMediaIntoModal();
-            // Add keyboard listener when modal opens
             document.addEventListener('keydown', handleKeyboardNav);
         }
 
@@ -225,12 +245,61 @@
             const items = siteData[currentTab];
             const currentItem = items[currentMediaIndex];
 
+            // Added controlsList="nodownload" to hide the default browser download button
             if (currentTab === 'videos') {
-                modalBody.innerHTML = `<video src="${currentItem.url}" controls autoplay></video>`;
+                modalBody.innerHTML = `<video src="${currentItem.url}" controls controlsList="nodownload" autoplay oncontextmenu="return false;"></video>`;
             } else {
-                modalBody.innerHTML = `<img src="${currentItem.url}" alt="${currentItem.title}">`;
+                modalBody.innerHTML = `<img src="${currentItem.url}" alt="evidence" oncontextmenu="return false;">`;
             }
         }
+
+        // --- RANDOMIZED DOWNLOAD SCRAMBLER ---
+        function generateRandomName() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+            let result = '';
+            for (let i = 0; i < 7; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        downloadBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            downloadBtn.innerText = "[ ENCRYPTING... ]";
+            
+            const currentItem = siteData[currentTab][currentMediaIndex];
+            const fileExtension = currentItem.name.substring(currentItem.name.lastIndexOf('.'));
+            const randomFileName = generateRandomName() + fileExtension;
+
+            try {
+                // Fetch the file as a raw blob so we can force the name
+                const response = await fetch(currentItem.url);
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                
+                // Create invisible link and force download
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = blobUrl;
+                a.download = randomFileName;
+                document.body.appendChild(a);
+                a.click();
+                
+                // Clean up
+                window.URL.revokeObjectURL(blobUrl);
+                a.remove();
+            } catch (err) {
+                console.error("Download failed:", err);
+                // Fallback if browser blocks Blob fetch
+                const a = document.createElement('a');
+                a.href = currentItem.url;
+                a.download = randomFileName;
+                a.target = "_blank";
+                a.click();
+            }
+            
+            setTimeout(() => { downloadBtn.innerText = "[ DOWNLOAD ]"; }, 1500);
+        });
 
         document.getElementById('prev-media').addEventListener('click', (e) => {
             e.stopPropagation(); 
@@ -246,7 +315,6 @@
             loadMediaIntoModal();
         });
 
-        // Keyboard Navigation Logic
         function handleKeyboardNav(e) {
             const items = siteData[currentTab];
             if (e.key === 'ArrowRight') {
@@ -263,7 +331,6 @@
         function closeModal() {
             modal.classList.add('hidden');
             modalBody.innerHTML = ''; 
-            // Remove keyboard listener when modal closes
             document.removeEventListener('keydown', handleKeyboardNav);
         }
 
