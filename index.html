@@ -16,30 +16,42 @@
 
     <main>
         <nav class="tabs">
-            <button class="tab-btn active" data-tab="videos">[ ARCHIVED_FOOTAGE ]</button>
-            <button class="tab-btn" data-tab="pictures">[ STILL_EVIDENCE ]</button>
+            <button class="tab-btn active" data-tab="videos">[ VIDEO_FOOTAGE ]</button>
+            <button class="tab-btn" data-tab="pictures">[ PICTURES ]</button>
         </nav>
         
         <div id="media-grid" class="grid-container">
             </div>
+
+        <div id="media-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close-btn">&times;</span>
+                <div id="modal-body"></div>
+            </div>
+        </div>
     </main>
 
     <script>
-        // --- 1. JUST TYPE YOUR FILE NAMES HERE ---
-        // Every time you upload a new file to GitHub, just add its name inside these quotes.
+        // --- 1. TYPE YOUR EXACT FILE NAMES HERE ---
         const myVideos = [
             "Dancinglady.mp4",
             "LostLady.mp4"
         ];
 
+        // To fix the pictures tab, type the exact names of the files you uploaded to assets/pictures/
         const myPictures = [
-            // Example: "creepy_room.jpg", "hallway.png"
+            // "example_photo1.jpg",
+            // "creepy_hallway.png"
         ];
 
-        // --- THE REST WORKS AUTOMATICALLY ---
+        // --- THE LOGIC ---
         let currentTab = 'videos';
         const gridContainer = document.getElementById('media-grid');
         const tabButtons = document.querySelectorAll('.tab-btn');
+        
+        const modal = document.getElementById('media-modal');
+        const modalBody = document.getElementById('modal-body');
+        const closeBtn = document.querySelector('.close-btn');
 
         function renderMedia(category) {
             gridContainer.innerHTML = ''; 
@@ -56,25 +68,75 @@
                 const card = document.createElement('div');
                 card.className = 'media-card';
 
-                // Strip extension for the title (e.g., "Dancinglady.mp4" -> "Dancinglady")
                 let cleanTitle = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
-                let fullPath = folderPath + fileName; // e.g., "assets/videos/Dancinglady.mp4"
+                let fullPath = folderPath + fileName; 
 
                 let mediaElement = category === 'videos' 
-                    ? `<video muted loop playsinline onmouseover="this.play()" onmouseout="this.pause()"><source src="${fullPath}" type="video/mp4"></video>`
+                    ? `<video muted loop playsinline preload="metadata"><source src="${fullPath}" type="video/mp4"></video>`
                     : `<img src="${fullPath}" alt="${cleanTitle}" loading="lazy">`;
 
                 card.innerHTML = `
                     ${mediaElement}
                     <div class="media-info">
                         <span class="media-title">${cleanTitle}</span>
-                        <span class="media-meta">FILE_ID: ${Math.floor(Math.random() * 90000) + 10000}</span>
                     </div>
                 `;
                 gridContainer.appendChild(card);
+
+                // --- HOVER PREVIEW LOGIC (VIDEOS ONLY) ---
+                if (category === 'videos') {
+                    const vid = card.querySelector('video');
+                    let previewInterval;
+
+                    card.addEventListener('mouseenter', () => {
+                        let playPromise = vid.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(e => console.log("Autoplay blocked:", e));
+                        }
+                        
+                        // Jumps around the timeline to create the "snapshot" effect
+                        previewInterval = setInterval(() => {
+                            if (vid.duration) {
+                                vid.currentTime = Math.random() * vid.duration;
+                            }
+                        }, 800);
+                    });
+
+                    card.addEventListener('mouseleave', () => {
+                        clearInterval(previewInterval);
+                        vid.pause();
+                        vid.currentTime = 0; 
+                    });
+                }
+
+                // --- POP-UP CLICK LOGIC ---
+                card.addEventListener('click', () => {
+                    modal.classList.remove('hidden');
+                    
+                    if (category === 'videos') {
+                        modalBody.innerHTML = `<video src="${fullPath}" controls autoplay></video>`;
+                    } else {
+                        modalBody.innerHTML = `<img src="${fullPath}" alt="${cleanTitle}">`;
+                    }
+                });
             });
         }
 
+        // Close Pop-up
+        function closeModal() {
+            modal.classList.add('hidden');
+            modalBody.innerHTML = ''; 
+        }
+
+        closeBtn.addEventListener('click', closeModal);
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Tab Switching
         tabButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 tabButtons.forEach(btn => btn.classList.remove('active'));
