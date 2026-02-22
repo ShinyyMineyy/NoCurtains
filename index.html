@@ -5,6 +5,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NoCurtains</title>
     <link rel="stylesheet" href="styles.css">
+    
+    <style>
+        .modal {
+            position: fixed !important; 
+            top: 0 !important; 
+            left: 0 !important; 
+            width: 100vw !important; 
+            height: 100vh !important;
+            background-color: rgba(0, 0, 0, 0.4) !important; 
+            backdrop-filter: blur(15px) !important; 
+            -webkit-backdrop-filter: blur(15px) !important;
+            display: flex !important; 
+            justify-content: center !important; 
+            align-items: center !important;
+            z-index: 10000 !important; 
+            opacity: 1; 
+            transition: opacity 0.4s ease;
+        }
+        .modal.hidden {
+            opacity: 0 !important; 
+            pointer-events: none !important;
+        }
+        .modal-content {
+            position: relative; 
+            width: 90%; 
+            max-width: 1000px;
+            background: transparent; 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 12px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.9);
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            transform: scale(1);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal.hidden .modal-content {
+            transform: scale(0.8);
+        }
+        .close-btn {
+            position: absolute; 
+            top: -45px; 
+            right: 0;
+            color: #fff; 
+            font-size: 2.5rem; 
+            cursor: pointer;
+            transition: color 0.3s ease; 
+            font-family: sans-serif;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        .close-btn:hover { color: #ff4444; }
+        #modal-body {
+            width: 100%; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+        }
+        #modal-body video, #modal-body img {
+            width: 100%; 
+            height: auto; 
+            display: block; 
+            max-height: 85vh;
+            object-fit: contain; 
+            border-radius: 8px;
+        }
+    </style>
 </head>
 <body>
     <div class="noise-overlay"></div>
@@ -20,7 +86,9 @@
             <button class="tab-btn" data-tab="pictures">[ PICTURES ]</button>
         </nav>
         
-        <div id="media-grid" class="grid-container">
+        <div id="loading" class="loading-state">SCANNING DIRECTORIES...</div>
+
+        <div id="media-grid" class="grid-container hidden">
             </div>
 
         <div id="media-modal" class="modal hidden">
@@ -32,58 +100,95 @@
     </main>
 
     <script>
-        // --- 1. TYPE YOUR EXACT FILE NAMES HERE ---
-        const myVideos = [
-            "Dancinglady.mp4",
-            "LostLady.mp4"
-        ];
-
-        // To fix the pictures tab, type the exact names of the files you uploaded to assets/pictures/
-        const myPictures = [
-            // "example_photo1.jpg",
-            // "creepy_hallway.png"
-        ];
-
-        // --- THE LOGIC ---
-        let currentTab = 'videos';
-        const gridContainer = document.getElementById('media-grid');
-        const tabButtons = document.querySelectorAll('.tab-btn');
+        // --- AUTO-FETCH LOGIC USING YOUR EXACT GITHUB REPO ---
+        const GITHUB_USERNAME = "ShinyyMineyy";
+        const GITHUB_REPO = "NoCurtains";
         
+        const API_VIDEOS = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/assets/videos`;
+        const API_PICTURES = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/assets/pictures`;
+
+        let siteData = { videos: [], pictures: [] };
+        let currentTab = 'videos';
+
+        const gridContainer = document.getElementById('media-grid');
+        const loadingState = document.getElementById('loading');
+        const tabButtons = document.querySelectorAll('.tab-btn');
         const modal = document.getElementById('media-modal');
         const modalBody = document.getElementById('modal-body');
         const closeBtn = document.querySelector('.close-btn');
 
-        function renderMedia(category) {
-            gridContainer.innerHTML = ''; 
-            
-            const fileList = category === 'videos' ? myVideos : myPictures;
-            const folderPath = category === 'videos' ? 'assets/videos/' : 'assets/pictures/';
+        async function fetchDirectory(url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    if(response.status === 403) return "RATE_LIMIT"; // GitHub blocked us for refreshing too much
+                    return [];
+                }
+                const data = await response.json();
+                
+                // Only grab files and format them
+                return data.filter(item => item.type === 'file').map(file => {
+                    let cleanTitle = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                    return {
+                        title: cleanTitle,
+                        url: file.download_url
+                    };
+                });
+            } catch (error) {
+                console.error("Fetch failed:", error);
+                return [];
+            }
+        }
 
-            if (fileList.length === 0) {
-                gridContainer.innerHTML = '<p style="color: #444; text-align: center; grid-column: 1/-1;">[ NO ASSETS LOGGED IN SYSTEM ]</p>';
+        async function initializeDatabase() {
+            loadingState.classList.remove('hidden');
+            gridContainer.classList.add('hidden');
+
+            const videoData = await fetchDirectory(API_VIDEOS);
+            const pictureData = await fetchDirectory(API_PICTURES);
+
+            // Check if GitHub temporarily blocked the API from too many refreshes
+            if (videoData === "RATE_LIMIT" || pictureData === "RATE_LIMIT") {
+                loadingState.innerHTML = "ERROR: GITHUB API RATE LIMIT EXCEEDED.<br>PLEASE WAIT 60 MINUTES.";
+                loadingState.style.color = "#8a0000";
                 return;
             }
 
-            fileList.forEach(fileName => {
+            siteData.videos = videoData || [];
+            siteData.pictures = pictureData || [];
+
+            loadingState.classList.add('hidden');
+            gridContainer.classList.remove('hidden');
+            
+            renderMedia(currentTab);
+        }
+
+        function renderMedia(category) {
+            gridContainer.innerHTML = ''; 
+            const items = siteData[category];
+
+            if (!items || items.length === 0) {
+                gridContainer.innerHTML = '<p style="color: #444; text-align: center; grid-column: 1/-1;">[ NO ASSETS FOUND IN DIRECTORY ]</p>';
+                return;
+            }
+
+            items.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'media-card';
 
-                let cleanTitle = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
-                let fullPath = folderPath + fileName; 
-
                 let mediaElement = category === 'videos' 
-                    ? `<video muted loop playsinline preload="metadata"><source src="${fullPath}" type="video/mp4"></video>`
-                    : `<img src="${fullPath}" alt="${cleanTitle}" loading="lazy">`;
+                    ? `<video muted loop playsinline preload="metadata"><source src="${item.url}" type="video/mp4"></video>`
+                    : `<img src="${item.url}" alt="${item.title}" loading="lazy">`;
 
                 card.innerHTML = `
                     ${mediaElement}
                     <div class="media-info">
-                        <span class="media-title">${cleanTitle}</span>
+                        <span class="media-title">${item.title}</span>
                     </div>
                 `;
                 gridContainer.appendChild(card);
 
-                // --- HOVER PREVIEW LOGIC (VIDEOS ONLY) ---
+                // --- HOVER PREVIEW LOGIC ---
                 if (category === 'videos') {
                     const vid = card.querySelector('video');
                     let previewInterval;
@@ -93,12 +198,8 @@
                         if (playPromise !== undefined) {
                             playPromise.catch(e => console.log("Autoplay blocked:", e));
                         }
-                        
-                        // Jumps around the timeline to create the "snapshot" effect
                         previewInterval = setInterval(() => {
-                            if (vid.duration) {
-                                vid.currentTime = Math.random() * vid.duration;
-                            }
+                            if (vid.duration) { vid.currentTime = Math.random() * vid.duration; }
                         }, 800);
                     });
 
@@ -112,31 +213,23 @@
                 // --- POP-UP CLICK LOGIC ---
                 card.addEventListener('click', () => {
                     modal.classList.remove('hidden');
-                    
                     if (category === 'videos') {
-                        modalBody.innerHTML = `<video src="${fullPath}" controls autoplay></video>`;
+                        modalBody.innerHTML = `<video src="${item.url}" controls autoplay></video>`;
                     } else {
-                        modalBody.innerHTML = `<img src="${fullPath}" alt="${cleanTitle}">`;
+                        modalBody.innerHTML = `<img src="${item.url}" alt="${item.title}">`;
                     }
                 });
             });
         }
 
-        // Close Pop-up
         function closeModal() {
             modal.classList.add('hidden');
             modalBody.innerHTML = ''; 
         }
 
         closeBtn.addEventListener('click', closeModal);
-        
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal();
-            }
-        });
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
-        // Tab Switching
         tabButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 tabButtons.forEach(btn => btn.classList.remove('active'));
@@ -147,7 +240,7 @@
         });
 
         // Boot up
-        renderMedia(currentTab);
+        initializeDatabase();
     </script>
 </body>
 </html>
