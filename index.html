@@ -19,94 +19,55 @@
             <button class="tab-btn active" data-tab="videos">[ ARCHIVED_FOOTAGE ]</button>
             <button class="tab-btn" data-tab="pictures">[ STILL_EVIDENCE ]</button>
         </nav>
-
-        <div id="loading" class="loading-state">SCANNING ASSETS DIRECTORY...</div>
         
-        <div id="media-grid" class="grid-container hidden">
+        <div id="media-grid" class="grid-container">
             </div>
     </main>
 
     <script>
-        // --- 1. SET YOUR GITHUB DETAILS HERE ---
-        const GITHUB_USERNAME = "YOUR_GITHUB_USERNAME"; 
-        const GITHUB_REPO = "YOUR_REPOSITORY_NAME";     
+        // --- 1. JUST TYPE YOUR FILE NAMES HERE ---
+        // Every time you upload a new file to GitHub, just add its name inside these quotes.
+        const myVideos = [
+            "Dancinglady.mp4",
+            "LostLady.mp4"
+        ];
 
-        // GitHub API Endpoints for your asset folders
-        const API_VIDEOS = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/assets/videos`;
-        const API_PICTURES = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/assets/pictures`;
+        const myPictures = [
+            // Example: "creepy_room.jpg", "hallway.png"
+        ];
 
-        let siteData = { videos: [], pictures: [] };
+        // --- THE REST WORKS AUTOMATICALLY ---
         let currentTab = 'videos';
-
         const gridContainer = document.getElementById('media-grid');
-        const loadingState = document.getElementById('loading');
         const tabButtons = document.querySelectorAll('.tab-btn');
-
-        async function fetchDirectory(url) {
-            try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    // Fails gracefully if the folder doesn't exist yet
-                    if(response.status === 404) return [];
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                
-                // Filter out non-files and format the data
-                return data.filter(item => item.type === 'file').map(file => {
-                    // Strip the file extension for a clean title (e.g., "creepy_hallway.mp4" -> "creepy_hallway")
-                    let cleanTitle = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-                    return {
-                        title: cleanTitle,
-                        url: file.download_url // The raw streaming link GitHub provides
-                    };
-                });
-            } catch (error) {
-                console.error("Directory fetch failed:", error);
-                return [];
-            }
-        }
-
-        async function initializeDatabase() {
-            loadingState.classList.remove('hidden');
-            gridContainer.classList.add('hidden');
-
-            // Fetch both directories simultaneously
-            const [videoData, pictureData] = await Promise.all([
-                fetchDirectory(API_VIDEOS),
-                fetchDirectory(API_PICTURES)
-            ]);
-
-            siteData.videos = videoData;
-            siteData.pictures = pictureData;
-
-            loadingState.classList.add('hidden');
-            gridContainer.classList.remove('hidden');
-            
-            renderMedia(currentTab);
-        }
 
         function renderMedia(category) {
             gridContainer.innerHTML = ''; 
-            const items = siteData[category];
+            
+            const fileList = category === 'videos' ? myVideos : myPictures;
+            const folderPath = category === 'videos' ? 'assets/videos/' : 'assets/pictures/';
 
-            if (!items || items.length === 0) {
-                gridContainer.innerHTML = '<p style="color: #444; text-align: center; grid-column: 1/-1;">[ NO ASSETS FOUND IN DIRECTORY ]</p>';
+            if (fileList.length === 0) {
+                gridContainer.innerHTML = '<p style="color: #444; text-align: center; grid-column: 1/-1;">[ NO ASSETS LOGGED IN SYSTEM ]</p>';
                 return;
             }
 
-            items.forEach(item => {
+            fileList.forEach(fileName => {
                 const card = document.createElement('div');
                 card.className = 'media-card';
 
+                // Strip extension for the title (e.g., "Dancinglady.mp4" -> "Dancinglady")
+                let cleanTitle = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+                let fullPath = folderPath + fileName; // e.g., "assets/videos/Dancinglady.mp4"
+
                 let mediaElement = category === 'videos' 
-                    ? `<video muted loop playsinline onmouseover="this.play()" onmouseout="this.pause()"><source src="${item.url}" type="video/mp4"></video>`
-                    : `<img src="${item.url}" alt="${item.title}" loading="lazy">`;
+                    ? `<video muted loop playsinline onmouseover="this.play()" onmouseout="this.pause()"><source src="${fullPath}" type="video/mp4"></video>`
+                    : `<img src="${fullPath}" alt="${cleanTitle}" loading="lazy">`;
 
                 card.innerHTML = `
                     ${mediaElement}
                     <div class="media-info">
-                        <span class="media-title">${item.title}</span>
+                        <span class="media-title">${cleanTitle}</span>
                         <span class="media-meta">FILE_ID: ${Math.floor(Math.random() * 90000) + 10000}</span>
                     </div>
                 `;
@@ -123,8 +84,8 @@
             });
         });
 
-        // Boot up sequence
-        initializeDatabase();
+        // Boot up
+        renderMedia(currentTab);
     </script>
 </body>
 </html>
