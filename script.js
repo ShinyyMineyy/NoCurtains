@@ -1,21 +1,20 @@
-// The exact deployment link you provided
-const API_URL = "https://script.google.com/macros/s/AKfycbwtaFW_1JwEU2rco-sQvmJBwoGufI_sk9W_iCh7XjBddQG1kYXB7j7YU5GNYBROoWYh/exec";
+// MAKE SURE THIS IS YOUR ABSOLUTE NEWEST DEPLOYMENT LINK
+const API_URL = "https://script.google.com/macros/s/AKfycbxXyU9eTzBzrUaoU2jfqusx_HL69u7_BzJsxZ_TUIxTyFxFUhA2i7xMxIaAZ1zqU95r/exec";
 
 let siteData = {
     videos: [],
     pictures: []
 };
 
-let currentTab = 'videos'; // Default tab
+let currentTab = 'videos';
 
-// DOM Elements
 const gridContainer = document.getElementById('media-grid');
 const loadingState = document.getElementById('loading');
 const tabButtons = document.querySelectorAll('.tab-btn');
 
-// Initialize the database connection
 async function fetchDatabase() {
     try {
+        // The redirect: "follow" fixes Google's internal API block
         const response = await fetch(API_URL, { redirect: "follow" });
         const data = await response.json();
         
@@ -27,18 +26,17 @@ async function fetchDatabase() {
         
         renderMedia(currentTab);
     } catch (error) {
-        loadingState.innerText = "ERROR // CONNECTION SEVERED";
+        loadingState.innerText = "ERROR // CONNECTION SEVERED. CHECK F12 CONSOLE.";
         loadingState.style.color = "#8a0000";
-        console.error("Fetch error:", error);
+        console.error("Fetch error details:", error);
     }
 }
 
-// Render the grid based on the selected category
 function renderMedia(category) {
-    gridContainer.innerHTML = ''; // Clear current grid
+    gridContainer.innerHTML = ''; 
     const items = siteData[category];
 
-    if (items.length === 0) {
+    if (!items || items.length === 0) {
         gridContainer.innerHTML = '<p style="color: #444; text-align: center; grid-column: 1/-1;">[ NO DATA FOUND IN DIRECTORY ]</p>';
         return;
     }
@@ -50,13 +48,11 @@ function renderMedia(category) {
         let mediaElement = '';
         
         if (category === 'videos') {
-            // Muted, plays only on hover
             mediaElement = `
                 <video muted loop playsinline onmouseover="this.play()" onmouseout="this.pause()">
                     <source src="${item.url}" type="video/mp4">
                 </video>`;
         } else {
-            // Static image
             mediaElement = `<img src="${item.url}" alt="${item.title}" loading="lazy">`;
         }
 
@@ -72,18 +68,13 @@ function renderMedia(category) {
     });
 }
 
-// Tab Switching Logic
 tabButtons.forEach(button => {
     button.addEventListener('click', (e) => {
-        // Update active class
         tabButtons.forEach(btn => btn.classList.remove('active'));
         e.target.classList.add('active');
-        
-        // Switch tab and render
         currentTab = e.target.getAttribute('data-tab');
         renderMedia(currentTab);
     });
 });
 
-// Boot up sequence
 fetchDatabase();
