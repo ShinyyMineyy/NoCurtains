@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="styles.css">
     
     <style>
+        /* --- CORE MODAL STYLES --- */
         .modal {
             position: fixed !important; top: 0 !important; left: 0 !important; 
             width: 100vw !important; height: 100vh !important;
@@ -15,9 +16,7 @@
             display: flex !important; justify-content: center !important; align-items: center !important;
             z-index: 10000 !important; opacity: 1; transition: opacity 0.4s ease;
         }
-        .modal.hidden {
-            opacity: 0 !important; pointer-events: none !important;
-        }
+        .modal.hidden { opacity: 0 !important; pointer-events: none !important; }
         .modal-content {
             position: relative; width: 90%; max-width: 1000px;
             background: transparent; border: 1px solid rgba(255, 255, 255, 0.1); 
@@ -25,42 +24,50 @@
             display: flex; justify-content: center; align-items: center;
             transform: scale(1); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .modal.hidden .modal-content {
-            transform: scale(0.8);
-        }
+        .modal.hidden .modal-content { transform: scale(0.8); }
         .close-btn {
             position: absolute; top: -45px; right: 0;
             color: #fff; font-size: 2.5rem; cursor: pointer;
             transition: color 0.3s ease; font-family: sans-serif;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-            z-index: 10002;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5); z-index: 10002;
         }
         .close-btn:hover { color: #ff4444; }
-        
-        /* --- NEW NAVIGATION ARROWS --- */
         .nav-btn {
             position: absolute; top: 50%; transform: translateY(-50%);
             color: rgba(255, 255, 255, 0.5); font-size: 3rem; 
             cursor: pointer; user-select: none;
-            transition: color 0.3s ease, transform 0.3s ease;
-            padding: 20px; z-index: 10001;
+            transition: color 0.3s ease, transform 0.3s ease; padding: 20px; z-index: 10001;
         }
         .nav-btn:hover { color: #fff; transform: translateY(-50%) scale(1.2); }
-        .prev-btn { left: -80px; }
-        .next-btn { right: -80px; }
-        
-        /* Keep arrows inside screen on smaller monitors */
-        @media (max-width: 1200px) {
-            .prev-btn { left: -20px; }
-            .next-btn { right: -20px; }
-        }
-
-        #modal-body {
-            width: 100%; display: flex; justify-content: center; align-items: center;
-        }
+        .prev-btn { left: -80px; } .next-btn { right: -80px; }
+        @media (max-width: 1200px) { .prev-btn { left: -20px; } .next-btn { right: -20px; } }
+        #modal-body { width: 100%; display: flex; justify-content: center; align-items: center; }
         #modal-body video, #modal-body img {
             width: 100%; height: auto; display: block; max-height: 85vh;
             object-fit: contain; border-radius: 8px;
+        }
+
+        /* --- NEW HEADER LORE & WARNING BANNER --- */
+        .lore-description {
+            color: #888; font-size: 0.95rem; margin: 20px auto 0; 
+            letter-spacing: 1px; max-width: 600px; line-height: 1.5;
+            border-left: 2px solid #555; padding-left: 15px; text-align: left;
+        }
+        .info-note {
+            display: inline-flex; align-items: center; justify-content: center;
+            margin-top: 25px; padding: 10px 20px; background: rgba(255, 68, 68, 0.05);
+            border: 1px solid rgba(255, 68, 68, 0.2); border-radius: 4px;
+            color: #ff5555; font-size: 0.8rem; letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+        .pulse-dot {
+            width: 8px; height: 8px; background-color: #ff4444; border-radius: 50%;
+            margin-right: 12px; animation: pulse-red 1.5s infinite;
+        }
+        @keyframes pulse-red { 
+            0% { opacity: 0.3; } 
+            50% { opacity: 1; box-shadow: 0 0 10px #ff4444; } 
+            100% { opacity: 0.3; } 
         }
     </style>
 </head>
@@ -70,6 +77,14 @@
     <header>
         <h1 class="logo">NoCurtains.</h1>
         <p class="subtitle">RESTRICTED ACCESS // DATABASE ENTRY</p>
+        
+        <p class="lore-description">
+            THIS IS THE PLACE WHERE ALL THE CURTAINS ARE DROPPED AND NO CENSOR IS ALLOWED. 
+        </p>
+        <div class="info-note">
+            <span class="pulse-dot"></span>
+            SYSTEM NOTE: Media decryption may take a few seconds to load perfectly. Please be patient.
+        </div>
     </header>
 
     <main>
@@ -79,7 +94,6 @@
         </nav>
         
         <div id="loading" class="loading-state">SCANNING DIRECTORIES...</div>
-
         <div id="media-grid" class="grid-container hidden"></div>
 
         <div id="media-modal" class="modal hidden">
@@ -101,7 +115,7 @@
 
         let siteData = { videos: [], pictures: [] };
         let currentTab = 'videos';
-        let currentMediaIndex = 0; // Tracks which file is open in the modal
+        let currentMediaIndex = 0; 
 
         const gridContainer = document.getElementById('media-grid');
         const loadingState = document.getElementById('loading');
@@ -193,7 +207,6 @@
                     });
                 }
 
-                // Click opens modal and sets current index
                 card.addEventListener('click', () => {
                     currentMediaIndex = index;
                     openModal();
@@ -201,10 +214,11 @@
             });
         }
 
-        // --- NEW MODAL NAVIGATION LOGIC ---
         function openModal() {
             modal.classList.remove('hidden');
             loadMediaIntoModal();
+            // Add keyboard listener when modal opens
+            document.addEventListener('keydown', handleKeyboardNav);
         }
 
         function loadMediaIntoModal() {
@@ -219,27 +233,42 @@
         }
 
         document.getElementById('prev-media').addEventListener('click', (e) => {
-            e.stopPropagation(); // Stops the click from closing the modal
+            e.stopPropagation(); 
             const items = siteData[currentTab];
-            currentMediaIndex = (currentMediaIndex - 1 + items.length) % items.length; // Loops backwards
+            currentMediaIndex = (currentMediaIndex - 1 + items.length) % items.length; 
             loadMediaIntoModal();
         });
 
         document.getElementById('next-media').addEventListener('click', (e) => {
             e.stopPropagation(); 
             const items = siteData[currentTab];
-            currentMediaIndex = (currentMediaIndex + 1) % items.length; // Loops forwards
+            currentMediaIndex = (currentMediaIndex + 1) % items.length; 
             loadMediaIntoModal();
         });
+
+        // Keyboard Navigation Logic
+        function handleKeyboardNav(e) {
+            const items = siteData[currentTab];
+            if (e.key === 'ArrowRight') {
+                currentMediaIndex = (currentMediaIndex + 1) % items.length;
+                loadMediaIntoModal();
+            } else if (e.key === 'ArrowLeft') {
+                currentMediaIndex = (currentMediaIndex - 1 + items.length) % items.length;
+                loadMediaIntoModal();
+            } else if (e.key === 'Escape') {
+                closeModal();
+            }
+        }
 
         function closeModal() {
             modal.classList.add('hidden');
             modalBody.innerHTML = ''; 
+            // Remove keyboard listener when modal closes
+            document.removeEventListener('keydown', handleKeyboardNav);
         }
 
         closeBtn.addEventListener('click', closeModal);
         modal.addEventListener('click', (e) => { 
-            // Only close if clicking the blurry background, not the video or arrows
             if (e.target === modal) closeModal(); 
         });
 
