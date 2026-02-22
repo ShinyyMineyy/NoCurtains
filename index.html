@@ -20,15 +20,20 @@
             <button class="tab-btn" data-tab="pictures">[ STILL_EVIDENCE ]</button>
         </nav>
 
-        <div id="loading" class="loading-state">DECRYPTING SECURE DRIVE...</div>
+        <div id="loading" class="loading-state">SCANNING ASSETS DIRECTORY...</div>
         
         <div id="media-grid" class="grid-container hidden">
             </div>
     </main>
 
     <script>
-        // --- PASTE YOUR NEW APPS SCRIPT URL HERE ---
-        const API_URL = "PASTE_YOUR_NEW_LINK_HERE";
+        // --- 1. SET YOUR GITHUB DETAILS HERE ---
+        const GITHUB_USERNAME = "YOUR_GITHUB_USERNAME"; 
+        const GITHUB_REPO = "YOUR_REPOSITORY_NAME";     
+
+        // GitHub API Endpoints for your asset folders
+        const API_VIDEOS = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/assets/videos`;
+        const API_PICTURES = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/assets/pictures`;
 
         let siteData = { videos: [], pictures: [] };
         let currentTab = 'videos';
@@ -37,31 +42,48 @@
         const loadingState = document.getElementById('loading');
         const tabButtons = document.querySelectorAll('.tab-btn');
 
-        async function fetchDatabase() {
+        async function fetchDirectory(url) {
             try {
-                const response = await fetch(API_URL, { 
-                    method: 'GET',
-                    redirect: "follow" 
-                });
-                
+                const response = await fetch(url);
                 if (!response.ok) {
+                    // Fails gracefully if the folder doesn't exist yet
+                    if(response.status === 404) return [];
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
                 const data = await response.json();
                 
-                siteData.videos = data.videos || [];
-                siteData.pictures = data.pictures || [];
-                
-                loadingState.classList.add('hidden');
-                gridContainer.classList.remove('hidden');
-                
-                renderMedia(currentTab);
+                // Filter out non-files and format the data
+                return data.filter(item => item.type === 'file').map(file => {
+                    // Strip the file extension for a clean title (e.g., "creepy_hallway.mp4" -> "creepy_hallway")
+                    let cleanTitle = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                    return {
+                        title: cleanTitle,
+                        url: file.download_url // The raw streaming link GitHub provides
+                    };
+                });
             } catch (error) {
-                loadingState.innerText = "ERROR // CONNECTION SEVERED";
-                loadingState.style.color = "#8a0000";
-                console.error("Fetch failed:", error);
+                console.error("Directory fetch failed:", error);
+                return [];
             }
+        }
+
+        async function initializeDatabase() {
+            loadingState.classList.remove('hidden');
+            gridContainer.classList.add('hidden');
+
+            // Fetch both directories simultaneously
+            const [videoData, pictureData] = await Promise.all([
+                fetchDirectory(API_VIDEOS),
+                fetchDirectory(API_PICTURES)
+            ]);
+
+            siteData.videos = videoData;
+            siteData.pictures = pictureData;
+
+            loadingState.classList.add('hidden');
+            gridContainer.classList.remove('hidden');
+            
+            renderMedia(currentTab);
         }
 
         function renderMedia(category) {
@@ -69,7 +91,7 @@
             const items = siteData[category];
 
             if (!items || items.length === 0) {
-                gridContainer.innerHTML = '<p style="color: #444; text-align: center; grid-column: 1/-1;">[ NO DATA FOUND IN DIRECTORY ]</p>';
+                gridContainer.innerHTML = '<p style="color: #444; text-align: center; grid-column: 1/-1;">[ NO ASSETS FOUND IN DIRECTORY ]</p>';
                 return;
             }
 
@@ -101,8 +123,8 @@
             });
         });
 
-        // Initialize the fetch when the page loads
-        fetchDatabase();
+        // Boot up sequence
+        initializeDatabase();
     </script>
 </body>
 </html>
