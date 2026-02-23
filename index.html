@@ -423,23 +423,20 @@
 
             if (currentTab === 'videos') {
                 modalBody.innerHTML = `<video src="${currentItem.url}" controls controlsList="nodownload" autoplay oncontextmenu="return false;"></video>`;
-            } else if (currentTab === 'reels') {
-                // Upgraded split view with labels and a center divider
+           } else if (currentTab === 'reels') {
+                // The new Interactive Slider UI
                 modalBody.innerHTML = `
                     <div style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px;">
                         
-                        <div class="split-view">
-                            <div class="media-container">
-                                <span class="media-label">[ BASE_IMAGE ]</span>
-                                <img src="${currentItem.imageUrl}" alt="Base Image" oncontextmenu="return false;">
-                            </div>
+                        <div class="comparison-wrapper">
+                            <span class="comp-label label-base">[ BASE_IMAGE ]</span>
+                            <span class="comp-label label-gen">[ GENERATED_VIDEO ]</span>
                             
-                            <div class="split-divider"></div>
-
-                            <div class="media-container">
-                                <span class="media-label">[ GENERATED_VIDEO ]</span>
-                                <video src="${currentItem.videoUrl}" controls controlsList="nodownload" autoplay oncontextmenu="return false;"></video>
-                            </div>
+                            <video class="comp-media comp-video" src="${currentItem.videoUrl}" loop muted playsinline autoplay oncontextmenu="return false;"></video>
+                            
+                            <img class="comp-media comp-image" id="comp-img" src="${currentItem.imageUrl}" alt="Base Image" oncontextmenu="return false;">
+                            
+                            <input type="range" min="0" max="100" value="50" class="comp-slider" id="comp-slider">
                         </div>
 
                         <div id="source-link-container" style="min-height: 30px;">
@@ -448,6 +445,21 @@
                     </div>
                 `;
 
+                // --- LIVE SLIDER MATH (FIXED) ---
+                setTimeout(() => {
+                    const slider = document.getElementById('comp-slider');
+                    const imgOverlay = document.getElementById('comp-img');
+                    
+                    if (slider && imgOverlay) {
+                        slider.addEventListener('input', (e) => {
+                            const slideValue = e.target.value;
+                            // Fixed the backticks and syntax here so the laser line works perfectly
+                            imgOverlay.style.clipPath = `polygon(0 0, ${slideValue}% 0, ${slideValue}% 100%, 0 100%)`;
+                        });
+                    }
+                }, 50);
+
+                // Fetching the Pinterest source link
                 if (currentItem.textUrl) {
                     try {
                         const response = await fetch(currentItem.textUrl);
