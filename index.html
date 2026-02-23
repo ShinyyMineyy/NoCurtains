@@ -188,6 +188,36 @@
             .premium-split-view { flex-direction: column; }
             .premium-media-body { height: 35vh; }
         }
+        /* --- USER FEED UI --- */
+        .feed-card {
+            background: #0a0a0a; border: 1px solid #222; border-radius: 8px;
+            overflow: hidden; padding-bottom: 15px;
+        }
+        .feed-header {
+            display: flex; align-items: center; gap: 10px; padding: 12px 15px;
+            border-bottom: 1px solid #1a1a1a;
+        }
+        .feed-avatar {
+            width: 35px; height: 35px; border-radius: 50%; background: #333;
+            object-fit: cover; border: 1px solid #555;
+        }
+        .feed-user-info { display: flex; flex-direction: column; }
+        .feed-username { color: #fff; font-size: 0.9rem; font-weight: bold; }
+        .feed-tag { 
+            font-size: 0.7rem; padding: 3px 6px; border-radius: 3px; 
+            font-family: monospace; font-weight: bold; letter-spacing: 1px;
+        }
+        .tag-video { background: rgba(0, 255, 0, 0.1); color: #00ff00; border: 1px solid #00ff00; }
+        .tag-i2v { background: rgba(255, 68, 68, 0.1); color: #ff4444; border: 1px solid #ff4444; }
+        
+        .feed-body { padding: 15px; }
+        .feed-title { color: #fff; font-size: 1.1rem; margin-bottom: 5px; font-weight: bold; }
+        .feed-desc { color: #888; font-size: 0.85rem; line-height: 1.4; }
+        
+        .feed-media-container { width: 100%; aspect-ratio: 16/9; background: #000; cursor: pointer; }
+        .feed-media-container img, .feed-media-container video {
+            width: 100%; height: 100%; object-fit: cover;
+        }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -208,9 +238,14 @@
 
     <main>
         <nav class="tabs">
-            <button class="tab-btn active" data-tab="videos">[ VIDEO_FOOTAGE ]</button>
-            <button class="tab-btn" data-tab="pictures">[ PICTURES ]</button>
-            <button class="tab-btn" data-tab="reels">[ AI_REELS ]</button>
+            <button class="tab-btn active" data-tab="videos">[ CLASSIFIED_VIDEOS ]</button>
+            <button class="tab-btn" data-tab="pictures">[ CLASSIFIED_PICTURES ]</button>
+            <button class="tab-btn" data-tab="feed">[ PUBLIC_FEED ]</button>
+            
+            <div style="margin-left: auto; display: flex; gap: 10px;">
+                <a href="upload.html" class="tab-btn" style="text-decoration: none;">[ UPLOAD_EVIDENCE ]</a>
+                <a href="auth.html" id="auth-btn" class="tab-btn" style="text-decoration: none; border-color: #ff4444; color: #ff4444;">[ LOGIN / REGISTER ]</a>
+            </div>
         </nav>
         
         <div id="loading" class="loading-state">SCANNING DIRECTORIES...</div>
