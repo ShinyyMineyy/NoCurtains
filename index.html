@@ -134,6 +134,59 @@
             50% { opacity: 1; box-shadow: 0 0 10px #ff4444; } 
             100% { opacity: 0.3; } 
         }
+        /* --- UPGRADED SPLIT SCREEN MODAL LOGIC --- */
+        .split-view {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            gap: 30px; /* Gives nice breathing room */
+            justify-content: center;
+            align-items: stretch;
+        }
+        
+        /* The new containers for the media and labels */
+        .media-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            max-width: 50%;
+        }
+
+        .media-label {
+            color: #ff4444;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+
+        .media-container img, .media-container video {
+            width: 100%;
+            height: auto;
+            max-height: 70vh;
+            object-fit: contain;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.5); 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.8);
+        }
+
+        /* The physical divider line in the middle */
+        .split-divider {
+            width: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            display: block;
+            margin: 30px 0;
+            border-radius: 2px;
+        }
+
+        @media (max-width: 800px) {
+            .split-view { flex-direction: column; gap: 15px; }
+            .media-container { max-width: 100%; }
+            .media-container img, .media-container video { max-height: 35vh; }
+            .split-divider { width: 100%; height: 2px; margin: 5px 0; }
+        }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -334,34 +387,44 @@
             if (currentTab === 'videos') {
                 modalBody.innerHTML = `<video src="${currentItem.url}" controls controlsList="nodownload" autoplay oncontextmenu="return false;"></video>`;
             } else if (currentTab === 'reels') {
-                // Set up the split view structure with a placeholder for the link
+                // Upgraded split view with labels and a center divider
                 modalBody.innerHTML = `
-                    <div style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                    <div style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+                        
                         <div class="split-view">
-                            <img src="${currentItem.imageUrl}" alt="Base Image" oncontextmenu="return false;">
-                            <video src="${currentItem.videoUrl}" controls controlsList="nodownload" autoplay oncontextmenu="return false;"></video>
+                            <div class="media-container">
+                                <span class="media-label">[ BASE_IMAGE ]</span>
+                                <img src="${currentItem.imageUrl}" alt="Base Image" oncontextmenu="return false;">
+                            </div>
+                            
+                            <div class="split-divider"></div>
+
+                            <div class="media-container">
+                                <span class="media-label">[ GENERATED_VIDEO ]</span>
+                                <video src="${currentItem.videoUrl}" controls controlsList="nodownload" autoplay oncontextmenu="return false;"></video>
+                            </div>
                         </div>
+
                         <div id="source-link-container" style="min-height: 30px;">
-                            <span style="color: #666; font-size: 0.8rem;">[ DECRYPTING SOURCE LINK... ]</span>
+                            <span style="color: #666; font-size: 0.8rem; font-family: monospace;">[ DECRYPTING SOURCE LINK... ]</span>
                         </div>
                     </div>
                 `;
 
-                // Dynamically fetch the text file to get the Pinterest link
                 if (currentItem.textUrl) {
                     try {
                         const response = await fetch(currentItem.textUrl);
                         const urlText = await response.text();
                         document.getElementById('source-link-container').innerHTML = `
-                            <a href="${urlText.trim()}" target="_blank" style="color: #ff4444; text-decoration: none; font-weight: bold; font-family: 'Courier New', monospace; letter-spacing: 2px; border: 1px solid #ff4444; padding: 8px 15px; border-radius: 4px; display: inline-block; transition: all 0.3s;">
+                            <a href="${urlText.trim()}" target="_blank" style="color: #ff4444; text-decoration: none; font-weight: bold; font-family: 'Courier New', monospace; letter-spacing: 2px; border: 1px solid rgba(255,68,68,0.3); padding: 8px 15px; border-radius: 4px; display: inline-block; transition: all 0.3s; background: rgba(255,68,68,0.05);">
                                 [ VIEW_ORIGINAL_SOURCE ]
                             </a>
                         `;
                     } catch (e) {
-                        document.getElementById('source-link-container').innerHTML = '<span style="color: #ff4444;">[ SOURCE DECRYPTION FAILED ]</span>';
+                        document.getElementById('source-link-container').innerHTML = '<span style="color: #ff4444; font-family: monospace;">[ SOURCE DECRYPTION FAILED ]</span>';
                     }
                 } else {
-                    document.getElementById('source-link-container').innerHTML = '<span style="color: #444;">[ NO SOURCE DATA FOUND ]</span>';
+                    document.getElementById('source-link-container').innerHTML = '<span style="color: #444; font-family: monospace;">[ NO SOURCE DATA FOUND ]</span>';
                 }
 
             } else {
