@@ -174,13 +174,14 @@
     </main>
 
     <script>
-        const GITHUB_USERNAME = "ShinyyMineyy";
+       const GITHUB_USERNAME = "ShinyyMineyy";
         const GITHUB_REPO = "NoCurtains";
         
         const API_VIDEOS = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/assets/videos`;
         const API_PICTURES = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/assets/pictures`;
+        const API_REELS = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/assets/reels`;
 
-        let siteData = { videos: [], pictures: [] };
+        let siteData = { videos: [], pictures: [], reels: [] };
         let currentTab = 'videos';
         let currentMediaIndex = 0; 
 
@@ -197,10 +198,10 @@
                 const response = await fetch(url);
                 if (!response.ok) {
                     if(response.status === 403) return "RATE_LIMIT"; 
+                    if(response.status === 404) return []; // Folder might not exist yet
                     return [];
                 }
                 const data = await response.json();
-                
                 return data.filter(item => item.type === 'file').map(file => {
                     return { url: file.download_url, name: file.name };
                 });
@@ -214,10 +215,13 @@
             loadingState.classList.remove('hidden');
             gridContainer.classList.add('hidden');
 
-            const videoData = await fetchDirectory(API_VIDEOS);
-            const pictureData = await fetchDirectory(API_PICTURES);
+            const [videoData, pictureData, reelsDataRaw] = await Promise.all([
+                fetchDirectory(API_VIDEOS),
+                fetchDirectory(API_PICTURES),
+                fetchDirectory(API_REELS)
+            ]);
 
-            if (videoData === "RATE_LIMIT" || pictureData === "RATE_LIMIT") {
+            if (videoData === "RATE_LIMIT" || pictureData === "RATE_LIMIT" || reelsDataRaw === "RATE_LIMIT") {
                 loadingState.innerHTML = "ERROR: GITHUB API RATE LIMIT EXCEEDED.<br>PLEASE WAIT 60 MINUTES.";
                 loadingState.style.color = "#8a0000";
                 return;
@@ -225,6 +229,23 @@
 
             siteData.videos = videoData || [];
             siteData.pictures = pictureData || [];
+
+            // --- AI REELS PAIRING LOGIC ---
+            let reelsPairs = {};
+            if (reelsDataRaw && reelsDataRaw.length > 0) {
+                reelsDataRaw.forEach(file => {
+                    let cleanTitle = file.name.substring(0, file.name.lastIndexOf('.'));
+                    let ext = file.name.substring(file.name.lastIndexOf('.') + 1).toLowerCase();
+                    
+                    if (!reelsPairs[cleanTitle]) reelsPairs[cleanTitle] = { name: cleanTitle };
+                    
+                    if (ext === 'mp4' || ext === 'webm') reelsPairs[cleanTitle].videoUrl = file.url;
+                    else if (ext === 'txt') reelsPairs[cleanTitle].textUrl = file.url; // Grabs the text file with the Pinterest link
+                    else reelsPairs[cleanTitle].imageUrl = file.url;
+                });
+                // Keep only reels that have both a base image and a generated video
+                siteData.reels = Object.values(reelsPairs).filter(pair => pair.videoUrl && pair.imageUrl);
+            }
 
             loadingState.classList.add('hidden');
             gridContainer.classList.remove('hidden');
@@ -246,16 +267,19 @@
                 card.className = 'media-card';
                 card.oncontextmenu = () => false; 
 
-                // Pure media, no titles
-                let mediaElement = category === 'videos' 
-                    ? `<video muted loop playsinline preload="metadata" oncontextmenu="return false;"><source src="${item.url}" type="video/mp4"></video>`
-                    : `<img src="${item.url}" alt="evidence" loading="lazy" oncontextmenu="return false;">`;
+                let mediaElement = '';
+                if (category === 'videos' || category === 'reels') {
+                    // Use the video as the grid preview
+                    let srcUrl = category === 'reels' ? item.videoUrl : item.url;
+                    mediaElement = `<video muted loop playsinline preload="metadata" oncontextmenu="return false;"><source src="${srcUrl}" type="video/mp4"></video>`;
+                } else {
+                    mediaElement = `<img src="${item.url}" alt="evidence" loading="lazy" oncontextmenu="return false;">`;
+                }
 
                 card.innerHTML = mediaElement;
                 gridContainer.appendChild(card);
 
-                // Pure snapshot preview for videos
-                if (category === 'videos') {
+                if (category === 'videos' || category === 'reels') {
                     const vid = card.querySelector('video');
                     let previewInterval;
                     
@@ -279,27 +303,18 @@
             });
         }
 
-        // --- NEW: DYNAMIC ROW HOVER LOGIC ---
-        // This calculates which cards are on the same visual row and expands them together
         gridContainer.addEventListener('mouseover', (e) => {
             const hoveredCard = e.target.closest('.media-card');
-            
             if (hoveredCard && !hoveredCard.classList.contains('expanded-row')) {
                 const targetOffset = hoveredCard.offsetTop;
                 const allCards = gridContainer.querySelectorAll('.media-card');
-                
                 allCards.forEach(card => {
-                    // If the card shares the same Y-axis position (with a tiny 20px tolerance), it's in the same row
-                    if (Math.abs(card.offsetTop - targetOffset) < 20) {
-                        card.classList.add('expanded-row');
-                    } else {
-                        card.classList.remove('expanded-row');
-                    }
+                    if (Math.abs(card.offsetTop - targetOffset) < 20) card.classList.add('expanded-row');
+                    else card.classList.remove('expanded-row');
                 });
             }
         });
 
-        // When leaving the grid entirely, shrink everything back to normal
         gridContainer.addEventListener('mouseleave', () => {
             gridContainer.querySelectorAll('.media-card').forEach(card => {
                 card.classList.remove('expanded-row');
@@ -312,24 +327,53 @@
             document.addEventListener('keydown', handleKeyboardNav);
         }
 
-        function loadMediaIntoModal() {
+        async function loadMediaIntoModal() {
             const items = siteData[currentTab];
             const currentItem = items[currentMediaIndex];
 
             if (currentTab === 'videos') {
                 modalBody.innerHTML = `<video src="${currentItem.url}" controls controlsList="nodownload" autoplay oncontextmenu="return false;"></video>`;
+            } else if (currentTab === 'reels') {
+                // Set up the split view structure with a placeholder for the link
+                modalBody.innerHTML = `
+                    <div style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                        <div class="split-view">
+                            <img src="${currentItem.imageUrl}" alt="Base Image" oncontextmenu="return false;">
+                            <video src="${currentItem.videoUrl}" controls controlsList="nodownload" autoplay oncontextmenu="return false;"></video>
+                        </div>
+                        <div id="source-link-container" style="min-height: 30px;">
+                            <span style="color: #666; font-size: 0.8rem;">[ DECRYPTING SOURCE LINK... ]</span>
+                        </div>
+                    </div>
+                `;
+
+                // Dynamically fetch the text file to get the Pinterest link
+                if (currentItem.textUrl) {
+                    try {
+                        const response = await fetch(currentItem.textUrl);
+                        const urlText = await response.text();
+                        document.getElementById('source-link-container').innerHTML = `
+                            <a href="${urlText.trim()}" target="_blank" style="color: #ff4444; text-decoration: none; font-weight: bold; font-family: 'Courier New', monospace; letter-spacing: 2px; border: 1px solid #ff4444; padding: 8px 15px; border-radius: 4px; display: inline-block; transition: all 0.3s;">
+                                [ VIEW_ORIGINAL_SOURCE ]
+                            </a>
+                        `;
+                    } catch (e) {
+                        document.getElementById('source-link-container').innerHTML = '<span style="color: #ff4444;">[ SOURCE DECRYPTION FAILED ]</span>';
+                    }
+                } else {
+                    document.getElementById('source-link-container').innerHTML = '<span style="color: #444;">[ NO SOURCE DATA FOUND ]</span>';
+                }
+
             } else {
                 modalBody.innerHTML = `<img src="${currentItem.url}" alt="evidence" oncontextmenu="return false;">`;
             }
         }
 
-        // Randomized Download Encrypter
+        // --- DOWNLOAD / ENCRYPTION SCRAMBLER ---
         function generateRandomName() {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
             let result = '';
-            for (let i = 0; i < 7; i++) {
-                result += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
+            for (let i = 0; i < 7; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
             return result;
         }
 
@@ -338,11 +382,13 @@
             downloadBtn.innerText = "[ ENCRYPTING... ]";
             
             const currentItem = siteData[currentTab][currentMediaIndex];
-            const fileExtension = currentItem.name.substring(currentItem.name.lastIndexOf('.'));
+            const targetUrl = currentTab === 'reels' ? currentItem.videoUrl : currentItem.url;
+            const fileName = currentItem.name || "video.mp4";
+            const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
             const randomFileName = generateRandomName() + fileExtension;
 
             try {
-                const response = await fetch(currentItem.url);
+                const response = await fetch(targetUrl);
                 const blob = await response.blob();
                 const blobUrl = window.URL.createObjectURL(blob);
                 
@@ -356,9 +402,8 @@
                 window.URL.revokeObjectURL(blobUrl);
                 a.remove();
             } catch (err) {
-                console.error("Download failed:", err);
                 const a = document.createElement('a');
-                a.href = currentItem.url;
+                a.href = targetUrl;
                 a.download = randomFileName;
                 a.target = "_blank";
                 a.click();
@@ -414,7 +459,6 @@
             });
         });
 
-        // Boot up
         initializeDatabase();
     </script>
 </body>
