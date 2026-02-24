@@ -26,7 +26,6 @@
             border: 1px solid #444; color: #fff; box-sizing: border-box;
         }
 
-        /* --- THE MASTER KEY SLOT UI --- */
         .security-override {
             display: flex; align-items: center; gap: 10px;
             background: rgba(255, 68, 68, 0.05); padding: 15px;
@@ -105,6 +104,11 @@
             return TOKEN_PREFIX + finalChar;
         }
 
+        // --- NEW: Unique ID Generator to prevent 'sha' collisions ---
+        function generateUniqueId() {
+            return Math.random().toString(36).substring(2, 7);
+        }
+
         async function pushToGitHub(token, path, base64Content, commitMessage) {
             const response = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
                 method: 'PUT',
@@ -125,31 +129,32 @@
             });
         }
 
-        // --- NEW BATCH UPLOAD LOGIC ---
         async function uploadStandard() {
             const token = getCompiledToken();
             if (!token) return logStatus("ERROR: FINAL AUTHORIZATION KEY MISSING.", "#ff4444");
             
-            // Grabs the array of selected files instead of just [0]
             const files = document.getElementById('standard-upload').files;
             if (files.length === 0) return logStatus("ERROR: NO FILES SELECTED.", "#ff4444");
 
             let successCount = 0;
             let failCount = 0;
 
-            // Sequentially loop through and upload each file to prevent API crashing
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 logStatus(`[ PROCESSING ${i + 1} OF ${files.length} ] ENCODING ${file.name.toUpperCase()}...`);
                 
-                // Auto-sorts into pictures or videos folder based on file type
                 const folderPath = file.type.includes('video') ? 'assets/videos/' : 'assets/pictures/';
                 const base64Data = await readFileAsBase64(file);
+
+                // --- Auto-Renamer Logic ---
+                const ext = file.name.substring(file.name.lastIndexOf('.'));
+                const baseName = file.name.substring(0, file.name.lastIndexOf('.')).replace(/[^a-zA-Z0-9]/g, '_');
+                const uniqueFileName = `${baseName}_${generateUniqueId()}${ext}`;
 
                 logStatus(`[ INJECTING ${i + 1} OF ${files.length} ] DEPLOYING TO ${folderPath}...`);
                 
                 try {
-                    await pushToGitHub(token, folderPath + file.name, base64Data, `Batch inject: ${file.name}`);
+                    await pushToGitHub(token, folderPath + uniqueFileName, base64Data, `Batch inject: ${uniqueFileName}`);
                     successCount++;
                 } catch (e) {
                     console.error("Upload Error:", e);
@@ -157,7 +162,6 @@
                 }
             }
 
-            // Final Report
             if (failCount === 0) {
                 logStatus(`BATCH DEPLOYMENT COMPLETE. [${successCount}] ASSETS SECURED.`, "#00ff00");
                 document.getElementById('standard-upload').value = '';
@@ -166,7 +170,6 @@
             }
         }
 
-        // AI REELS UPLOAD (USES THE MASTER KEY)
         async function uploadReel() {
             const token = getCompiledToken();
             if (!token) return logStatus("ERROR: FINAL AUTHORIZATION KEY MISSING.", "#ff4444");
@@ -178,7 +181,9 @@
             if (!imgFile || !vidFile) return logStatus("ERROR: BOTH IMAGE AND VIDEO REQUIRED FOR REEL.", "#ff4444");
             if (!sourceUrl) return logStatus("ERROR: SOURCE URL REQUIRED.", "#ff4444");
 
-            const cleanName = vidFile.name.substring(0, vidFile.name.lastIndexOf('.')).replace(/\s+/g, '_');
+            // --- Auto-Renamer Logic for Reels ---
+            const baseName = vidFile.name.substring(0, vidFile.name.lastIndexOf('.')).replace(/[^a-zA-Z0-9]/g, '_');
+            const cleanName = `${baseName}_${generateUniqueId()}`; // Links all 3 files perfectly
             const imgExt = imgFile.name.substring(imgFile.name.lastIndexOf('.'));
             
             logStatus("[ COMPILING AI REEL PACKAGE... ]");
