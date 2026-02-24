@@ -20,10 +20,25 @@
         .section-title { color: #ff4444; font-size: 0.85rem; letter-spacing: 1px; margin: 25px 0 10px 0;}
         .input-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-size: 0.8rem; color: #aaa; }
-        input[type="password"], input[type="text"], input[type="file"] {
+        
+        input[type="text"], input[type="file"] {
             width: 100%; padding: 10px; background: #000; 
             border: 1px solid #444; color: #fff; box-sizing: border-box;
         }
+
+        /* --- THE MASTER KEY SLOT UI --- */
+        .security-override {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(255, 68, 68, 0.05); padding: 15px;
+            border: 1px solid rgba(255, 68, 68, 0.3); border-radius: 4px;
+        }
+        .token-prefix { color: #555; font-size: 0.9rem; letter-spacing: 1px; flex: 1; text-align: right; }
+        input.master-key {
+            width: 50px; text-align: center; font-size: 1.2rem; font-weight: bold;
+            color: #ff4444; border-color: #ff4444; background: #1a0000; padding: 8px;
+        }
+        input.master-key:focus { outline: none; box-shadow: 0 0 10px rgba(255,68,68,0.5); }
+
         .deploy-btn {
             background: #222; color: #fff; border: 1px solid #444; padding: 12px;
             width: 100%; font-weight: bold; cursor: pointer; letter-spacing: 1px;
@@ -42,15 +57,19 @@
         <h2>[ DATABASE UPLINK ]</h2>
         
         <div class="input-group">
-            <label>GITHUB ACCESS TOKEN (REQUIRED)</label>
-            <input type="password" id="gh-token" placeholder="Paste secure token here...">
+            <label>AUTHORIZATION OVERRIDE (LAST CHARACTER)</label>
+            <div class="security-override">
+                <span class="token-prefix">ghp_ZTM3ylwWP8b9WxjTrGevn3ASVwr8sm2Bde3</span>
+                <input type="text" id="master-key" class="master-key" maxlength="1" placeholder="*">
+            </div>
         </div>
 
-        <div class="section-title">/// STANDARD EVIDENCE (VIDEOS / PICTURES)</div>
+        <div class="section-title">/// STANDARD EVIDENCE (BATCH UPLOAD)</div>
         <div class="input-group">
-            <input type="file" id="standard-upload" accept="video/mp4, image/*">
+            <label>SELECT MULTIPLE FILES (MP4 / JPG / PNG)</label>
+            <input type="file" id="standard-upload" accept="video/mp4, image/*" multiple>
         </div>
-        <button class="deploy-btn" onclick="uploadStandard()">INJECT STANDARD EVIDENCE</button>
+        <button class="deploy-btn" onclick="uploadStandard()">INJECT BATCH EVIDENCE</button>
 
         <div class="section-title">/// AI REELS (BASE + GENERATION + SOURCE)</div>
         <div class="input-group">
@@ -71,8 +90,8 @@
     </div>
 
     <script>
-        // --- 1. SET YOUR GITHUB DETAILS HERE ---
         const REPO = "ShinyyMineyy/NoCurtains";
+        const TOKEN_PREFIX = "ghp_ZTM3ylwWP8b9WxjTrGevn3ASVwr8sm2Bde3";
         const statusLog = document.getElementById('status-log');
 
         function logStatus(msg, color = "#888") {
@@ -80,7 +99,12 @@
             statusLog.style.color = color;
         }
 
-        // Generic function to push a single file to GitHub via API
+        function getCompiledToken() {
+            const finalChar = document.getElementById('master-key').value.trim();
+            if (!finalChar) return null;
+            return TOKEN_PREFIX + finalChar;
+        }
+
         async function pushToGitHub(token, path, base64Content, commitMessage) {
             const response = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
                 method: 'PUT',
@@ -93,7 +117,6 @@
             }
         }
 
-        // Helper to read file as Base64
         function readFileAsBase64(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -102,66 +125,80 @@
             });
         }
 
-        // STANDARD UPLOAD (1 FILE)
+        // --- NEW BATCH UPLOAD LOGIC ---
         async function uploadStandard() {
-            const token = document.getElementById('gh-token').value;
-            const file = document.getElementById('standard-upload').files[0];
+            const token = getCompiledToken();
+            if (!token) return logStatus("ERROR: FINAL AUTHORIZATION KEY MISSING.", "#ff4444");
             
-            if (!token) return logStatus("ERROR: TOKEN REQUIRED.", "#ff4444");
-            if (!file) return logStatus("ERROR: NO FILE SELECTED.", "#ff4444");
+            // Grabs the array of selected files instead of just [0]
+            const files = document.getElementById('standard-upload').files;
+            if (files.length === 0) return logStatus("ERROR: NO FILES SELECTED.", "#ff4444");
 
-            logStatus("[ ENCODING FILE... ]");
-            const folderPath = file.type.includes('video') ? 'assets/videos/' : 'assets/pictures/';
-            const base64Data = await readFileAsBase64(file);
+            let successCount = 0;
+            let failCount = 0;
 
-            logStatus("[ INJECTING INTO REPOSITORY... ]");
-            try {
-                await pushToGitHub(token, folderPath + file.name, base64Data, `Added standard file: ${file.name}`);
-                logStatus("UPLOAD SUCCESSFUL.", "#00ff00");
+            // Sequentially loop through and upload each file to prevent API crashing
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                logStatus(`[ PROCESSING ${i + 1} OF ${files.length} ] ENCODING ${file.name.toUpperCase()}...`);
+                
+                // Auto-sorts into pictures or videos folder based on file type
+                const folderPath = file.type.includes('video') ? 'assets/videos/' : 'assets/pictures/';
+                const base64Data = await readFileAsBase64(file);
+
+                logStatus(`[ INJECTING ${i + 1} OF ${files.length} ] DEPLOYING TO ${folderPath}...`);
+                
+                try {
+                    await pushToGitHub(token, folderPath + file.name, base64Data, `Batch inject: ${file.name}`);
+                    successCount++;
+                } catch (e) {
+                    console.error("Upload Error:", e);
+                    failCount++;
+                }
+            }
+
+            // Final Report
+            if (failCount === 0) {
+                logStatus(`BATCH DEPLOYMENT COMPLETE. [${successCount}] ASSETS SECURED.`, "#00ff00");
                 document.getElementById('standard-upload').value = '';
-            } catch (e) {
-                logStatus(`FAILED: ${e.message}`, "#ff4444");
+            } else {
+                logStatus(`BATCH FINISHED. SUCCESS: ${successCount} | FAILED: ${failCount}`, "#ff4444");
             }
         }
 
-        // AI REELS UPLOAD (3 FILES AUTOMATICALLY LINKED)
+        // AI REELS UPLOAD (USES THE MASTER KEY)
         async function uploadReel() {
-            const token = document.getElementById('gh-token').value;
+            const token = getCompiledToken();
+            if (!token) return logStatus("ERROR: FINAL AUTHORIZATION KEY MISSING.", "#ff4444");
+            
             const imgFile = document.getElementById('reel-image').files[0];
             const vidFile = document.getElementById('reel-video').files[0];
             const sourceUrl = document.getElementById('reel-url').value;
 
-            if (!token) return logStatus("ERROR: TOKEN REQUIRED.", "#ff4444");
             if (!imgFile || !vidFile) return logStatus("ERROR: BOTH IMAGE AND VIDEO REQUIRED FOR REEL.", "#ff4444");
             if (!sourceUrl) return logStatus("ERROR: SOURCE URL REQUIRED.", "#ff4444");
 
-            // Use the video name (minus the extension) as the master ID for the pair
             const cleanName = vidFile.name.substring(0, vidFile.name.lastIndexOf('.')).replace(/\s+/g, '_');
             const imgExt = imgFile.name.substring(imgFile.name.lastIndexOf('.'));
             
             logStatus("[ COMPILING AI REEL PACKAGE... ]");
             
             try {
-                // 1. Convert everything to Base64
                 const imgB64 = await readFileAsBase64(imgFile);
                 const vidB64 = await readFileAsBase64(vidFile);
-                const urlB64 = btoa(sourceUrl); // Encodes the text string into Base64
+                const urlB64 = btoa(sourceUrl);
 
-                // 2. Upload Image
                 logStatus("[ 1/3 ] UPLOADING BASE IMAGE...");
                 await pushToGitHub(token, `assets/reels/${cleanName}${imgExt}`, imgB64, `Reel Image: ${cleanName}`);
                 
-                // 3. Upload Video
                 logStatus("[ 2/3 ] UPLOADING GENERATED VIDEO...");
                 await pushToGitHub(token, `assets/reels/${cleanName}.mp4`, vidB64, `Reel Video: ${cleanName}`);
                 
-                // 4. Upload Text File containing the URL
                 logStatus("[ 3/3 ] INJECTING SOURCE METADATA...");
                 await pushToGitHub(token, `assets/reels/${cleanName}.txt`, urlB64, `Reel Meta: ${cleanName}`);
 
                 logStatus("REEL DEPLOYMENT COMPLETE.", "#00ff00");
                 
-                // Clear inputs
                 document.getElementById('reel-image').value = '';
                 document.getElementById('reel-video').value = '';
                 document.getElementById('reel-url').value = '';
