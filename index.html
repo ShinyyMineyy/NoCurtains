@@ -7,59 +7,57 @@
     <link rel="stylesheet" href="styles.css">
     
     <style>
-        /* --- MEDIA GRID & DYNAMIC ROW ASPECT RATIO --- */
+        /* --- MEDIA GRID: 5 COLUMNS, STRICT 9:16 RATIO --- */
         .grid-container {
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(5, 1fr); /* Exactly 5 videos per row */
             gap: 20px; 
             padding: 0 40px 60px 40px; 
-            max-width: 1400px; 
+            max-width: 1600px; /* Widened slightly to fit 5 cards beautifully */
             margin: 0 auto;
-            align-items: center; 
         }
+
+        /* Fallback for smaller screens so it doesn't break on laptops/phones */
+        @media (max-width: 1400px) { .grid-container { grid-template-columns: repeat(4, 1fr); } }
+        @media (max-width: 1100px) { .grid-container { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 800px) { .grid-container { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 500px) { .grid-container { grid-template-columns: repeat(1, 1fr); } }
 
         .media-card {
             position: relative; 
             background-color: #0a0a0a; 
             border: 1px solid #1a1a1a;
-            border-radius: 6px;
+            border-radius: 8px;
             overflow: hidden; 
-            aspect-ratio: 16 / 9; /* Default hidden state */
+            aspect-ratio: 9 / 16; /* Permanent Vertical Video Format */
             cursor: pointer; 
-            /* Smooth transitions for the row expansion */
-            transition: aspect-ratio 0.5s cubic-bezier(0.25, 1, 0.5, 1), 
-                        transform 0.5s cubic-bezier(0.25, 1, 0.5, 1), 
+            /* Subtle, premium hover transition */
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), 
                         border-color 0.3s ease, 
                         box-shadow 0.3s ease;
             z-index: 1;
         }
 
-        /* NEW: We use a JS-applied class instead of :hover to trigger the whole row */
-        .media-card.expanded-row {
-            aspect-ratio: 9 / 16; /* Expands to full vertical video ratio */
-            border-color: #444;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.9);
+        /* Clean, minimal highlight animation on hover */
+        .media-card:hover {
+            transform: translateY(-6px); /* Slight lift */
+            border-color: rgba(255, 68, 68, 0.5); /* Subtle red glow matching your theme */
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9), 0 0 15px rgba(255, 68, 68, 0.1);
             z-index: 10;
-        }
-
-        /* Gives a slight pop to the specific card you are hovering inside the expanded row */
-        .media-card.expanded-row:hover {
-            transform: scale(1.03); 
-            border-color: #777;
         }
 
         /* --- CORE MODAL STYLES --- */
         .modal {
             position: fixed !important; top: 0 !important; left: 0 !important; 
             width: 100vw !important; height: 100vh !important;
-            background-color: rgba(0, 0, 0, 0.6) !important; 
+            background-color: rgba(0, 0, 0, 0.8) !important; 
             backdrop-filter: blur(15px) !important; -webkit-backdrop-filter: blur(15px) !important;
             display: flex !important; justify-content: center !important; align-items: center !important;
             z-index: 10000 !important; opacity: 1; transition: opacity 0.4s ease;
         }
         .modal.hidden { opacity: 0 !important; pointer-events: none !important; }
         .modal-content {
-            position: relative; width: 90%; max-width: 1000px;
+            position: relative; width: 90%; max-width: 1200px;
             background: transparent; border: 1px solid rgba(255, 255, 255, 0.1); 
             border-radius: 12px; box-shadow: 0 15px 50px rgba(0,0,0,0.9);
             display: flex; justify-content: center; align-items: center;
@@ -75,7 +73,6 @@
         }
         .close-btn:hover { color: #ff4444; }
 
-        /* --- CUSTOM DOWNLOAD BUTTON --- */
         .download-btn {
             position: absolute; top: -38px; right: 50px;
             color: #888; font-size: 1rem; cursor: pointer;
@@ -93,26 +90,48 @@
         }
         .nav-btn:hover { color: #fff; transform: translateY(-50%) scale(1.2); }
         .prev-btn { left: -80px; } .next-btn { right: -80px; }
-        @media (max-width: 1200px) { .prev-btn { left: -20px; } .next-btn { right: -20px; } }
+        @media (max-width: 1300px) { .prev-btn { left: -20px; } .next-btn { right: -20px; } }
+        
         #modal-body { width: 100%; display: flex; justify-content: center; align-items: center; }
         
-        /* Blocks right-click and long-press saving */
         #modal-body video, #modal-body img, .media-card video, .media-card img {
             width: 100%; height: 100%; display: block; max-height: 85vh;
             object-fit: cover; border-radius: 8px;
-            -webkit-touch-callout: none; 
-            -webkit-user-select: none; 
-            -khtml-user-select: none; 
-            -moz-user-select: none; 
-            -ms-user-select: none; 
-            user-select: none;
-            -webkit-user-drag: none;
+            -webkit-touch-callout: none; -webkit-user-select: none; 
+            -khtml-user-select: none; -moz-user-select: none; 
+            -ms-user-select: none; user-select: none; -webkit-user-drag: none;
+        }
+        #modal-body video, #modal-body img { object-fit: contain; }
+
+        /* --- PREMIUM SIDE-BY-SIDE REELS UI --- */
+        .premium-split-view {
+            display: flex; flex-direction: row; width: 100%; max-width: 1200px;
+            gap: 20px; justify-content: center; align-items: center;
+        }
+        .premium-media-card {
+            flex: 1; display: flex; flex-direction: column;
+            background: rgba(10, 10, 10, 0.9); border: 1px solid #333;
+            border-radius: 8px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+            width: 100%;
+        }
+        .premium-media-header {
+            background: #111; border-bottom: 1px solid #333; padding: 12px;
+            text-align: center; font-family: 'Courier New', monospace; font-size: 0.85rem;
+            letter-spacing: 2px; font-weight: bold;
+        }
+        .premium-media-body {
+            width: 100%; height: 60vh; display: flex;
+            justify-content: center; align-items: center; background: #000;
+        }
+        .premium-media-body img, .premium-media-body video {
+            width: 100%; height: 100%; object-fit: contain;
+        }
+        @media (max-width: 800px) {
+            .premium-split-view { flex-direction: column; }
+            .premium-media-body { height: 35vh; }
         }
 
-        #modal-body video, #modal-body img {
-            object-fit: contain; /* Full video uncropped in modal */
-        }
-
+        /* --- HEADER LORE --- */
         .lore-description {
             color: #888; font-size: 0.95rem; margin: 20px auto 0; 
             letter-spacing: 1px; max-width: 600px; line-height: 1.5;
@@ -129,95 +148,7 @@
             width: 8px; height: 8px; background-color: #ff4444; border-radius: 50%;
             margin-right: 12px; animation: pulse-red 1.5s infinite;
         }
-        @keyframes pulse-red { 
-            0% { opacity: 0.3; } 
-            50% { opacity: 1; box-shadow: 0 0 10px #ff4444; } 
-            100% { opacity: 0.3; } 
-        }
-  /* --- PREMIUM SIDE-BY-SIDE REELS UI --- */
-        .premium-split-view {
-            display: flex;
-            flex-direction: row;
-            width: 100%;
-            max-width: 1200px;
-            gap: 20px;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .premium-media-card {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: rgba(10, 10, 10, 0.9);
-            border: 1px solid #333;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.9);
-            width: 100%;
-        }
-
-        .premium-media-header {
-            background: #111;
-            border-bottom: 1px solid #333;
-            padding: 12px;
-            text-align: center;
-            font-family: 'Courier New', monospace;
-            font-size: 0.85rem;
-            color: #888;
-            letter-spacing: 2px;
-            font-weight: bold;
-        }
-
-        .premium-media-body {
-            width: 100%;
-            height: 60vh; /* Locks both boxes to the exact same height */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #000;
-        }
-
-        .premium-media-body img, .premium-media-body video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain; /* Ensures nothing gets cropped */
-        }
-
-        @media (max-width: 800px) {
-            .premium-split-view { flex-direction: column; }
-            .premium-media-body { height: 35vh; }
-        }
-        /* --- USER FEED UI --- */
-        .feed-card {
-            background: #0a0a0a; border: 1px solid #222; border-radius: 8px;
-            overflow: hidden; padding-bottom: 15px;
-        }
-        .feed-header {
-            display: flex; align-items: center; gap: 10px; padding: 12px 15px;
-            border-bottom: 1px solid #1a1a1a;
-        }
-        .feed-avatar {
-            width: 35px; height: 35px; border-radius: 50%; background: #333;
-            object-fit: cover; border: 1px solid #555;
-        }
-        .feed-user-info { display: flex; flex-direction: column; }
-        .feed-username { color: #fff; font-size: 0.9rem; font-weight: bold; }
-        .feed-tag { 
-            font-size: 0.7rem; padding: 3px 6px; border-radius: 3px; 
-            font-family: monospace; font-weight: bold; letter-spacing: 1px;
-        }
-        .tag-video { background: rgba(0, 255, 0, 0.1); color: #00ff00; border: 1px solid #00ff00; }
-        .tag-i2v { background: rgba(255, 68, 68, 0.1); color: #ff4444; border: 1px solid #ff4444; }
-        
-        .feed-body { padding: 15px; }
-        .feed-title { color: #fff; font-size: 1.1rem; margin-bottom: 5px; font-weight: bold; }
-        .feed-desc { color: #888; font-size: 0.85rem; line-height: 1.4; }
-        
-        .feed-media-container { width: 100%; aspect-ratio: 16/9; background: #000; cursor: pointer; }
-        .feed-media-container img, .feed-media-container video {
-            width: 100%; height: 100%; object-fit: cover;
-        }
+        @keyframes pulse-red { 0% { opacity: 0.3; } 50% { opacity: 1; box-shadow: 0 0 10px #ff4444; } 100% { opacity: 0.3; } }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -238,7 +169,7 @@
 
     <main>
         <nav class="tabs">
-            <button class="tab-btn active" data-tab="videos">[ VIDEOS ]</button>
+            <button class="tab-btn active" data-tab="videos">[ VIDEO_FOOTAGE ]</button>
             <button class="tab-btn" data-tab="pictures">[ PICTURES ]</button>
             <button class="tab-btn" data-tab="reels">[ AI_REELS ]</button>
         </nav>
@@ -258,7 +189,7 @@
     </main>
 
     <script>
-       const GITHUB_USERNAME = "ShinyyMineyy";
+        const GITHUB_USERNAME = "ShinyyMineyy";
         const GITHUB_REPO = "NoCurtains";
         
         const API_VIDEOS = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/assets/videos`;
@@ -282,7 +213,7 @@
                 const response = await fetch(url);
                 if (!response.ok) {
                     if(response.status === 403) return "RATE_LIMIT"; 
-                    if(response.status === 404) return []; // Folder might not exist yet
+                    if(response.status === 404) return []; 
                     return [];
                 }
                 const data = await response.json();
@@ -314,7 +245,6 @@
             siteData.videos = videoData || [];
             siteData.pictures = pictureData || [];
 
-            // --- AI REELS PAIRING LOGIC ---
             let reelsPairs = {};
             if (reelsDataRaw && reelsDataRaw.length > 0) {
                 reelsDataRaw.forEach(file => {
@@ -324,10 +254,9 @@
                     if (!reelsPairs[cleanTitle]) reelsPairs[cleanTitle] = { name: cleanTitle };
                     
                     if (ext === 'mp4' || ext === 'webm') reelsPairs[cleanTitle].videoUrl = file.url;
-                    else if (ext === 'txt') reelsPairs[cleanTitle].textUrl = file.url; // Grabs the text file with the Pinterest link
+                    else if (ext === 'txt') reelsPairs[cleanTitle].textUrl = file.url;
                     else reelsPairs[cleanTitle].imageUrl = file.url;
                 });
-                // Keep only reels that have both a base image and a generated video
                 siteData.reels = Object.values(reelsPairs).filter(pair => pair.videoUrl && pair.imageUrl);
             }
 
@@ -353,9 +282,9 @@
 
                 let mediaElement = '';
                 if (category === 'videos' || category === 'reels') {
-                    // Use the video as the grid preview
                     let srcUrl = category === 'reels' ? item.videoUrl : item.url;
-                    mediaElement = `<video muted loop playsinline preload="metadata" oncontextmenu="return false;"><source src="${srcUrl}" type="video/mp4"></video>`;
+                    // Added a poster placeholder or rely on preload="metadata"
+                    mediaElement = `<video muted playsinline preload="metadata" oncontextmenu="return false;"><source src="${srcUrl}" type="video/mp4"></video>`;
                 } else {
                     mediaElement = `<img src="${item.url}" alt="evidence" loading="lazy" oncontextmenu="return false;">`;
                 }
@@ -363,20 +292,34 @@
                 card.innerHTML = mediaElement;
                 gridContainer.appendChild(card);
 
+                // --- NEW: SLOW-MOTION 3-SECOND LOOP PREVIEW ---
                 if (category === 'videos' || category === 'reels') {
                     const vid = card.querySelector('video');
                     let previewInterval;
                     
                     card.addEventListener('mouseenter', () => {
-                        vid.pause(); 
+                        vid.currentTime = 0; // Start from beginning
+                        vid.playbackRate = 0.5; // Cinematic slow motion
+                        
+                        // Handle browser autoplay policies cleanly
+                        const playPromise = vid.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(error => { console.log("Autoplay blocked:", error); });
+                        }
+                        
+                        // Force loop at the 3-second mark of the video
                         previewInterval = setInterval(() => {
-                            if (vid.duration) { vid.currentTime = Math.random() * vid.duration; }
-                        }, 500); 
+                            if (vid.currentTime >= 3) {
+                                vid.currentTime = 0; 
+                            }
+                        }, 100); 
                     });
                     
                     card.addEventListener('mouseleave', () => {
                         clearInterval(previewInterval);
+                        vid.pause();
                         vid.currentTime = 0; 
+                        vid.playbackRate = 1.0; // Reset rate just to be safe
                     });
                 }
 
@@ -386,24 +329,6 @@
                 });
             });
         }
-
-        gridContainer.addEventListener('mouseover', (e) => {
-            const hoveredCard = e.target.closest('.media-card');
-            if (hoveredCard && !hoveredCard.classList.contains('expanded-row')) {
-                const targetOffset = hoveredCard.offsetTop;
-                const allCards = gridContainer.querySelectorAll('.media-card');
-                allCards.forEach(card => {
-                    if (Math.abs(card.offsetTop - targetOffset) < 20) card.classList.add('expanded-row');
-                    else card.classList.remove('expanded-row');
-                });
-            }
-        });
-
-        gridContainer.addEventListener('mouseleave', () => {
-            gridContainer.querySelectorAll('.media-card').forEach(card => {
-                card.classList.remove('expanded-row');
-            });
-        });
 
         function openModal() {
             modal.classList.remove('hidden');
@@ -417,8 +342,8 @@
 
             if (currentTab === 'videos') {
                 modalBody.innerHTML = `<video src="${currentItem.url}" controls controlsList="nodownload" autoplay oncontextmenu="return false;"></video>`;
-           } else if (currentTab === 'reels') {
-                // The Premium Side-by-Side UI
+            } else if (currentTab === 'reels') {
+                
                 modalBody.innerHTML = `
                     <div style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px;">
                         
@@ -444,7 +369,6 @@
                     </div>
                 `;
 
-                // Fetching the Pinterest source link
                 if (currentItem.textUrl) {
                     try {
                         const response = await fetch(currentItem.textUrl);
@@ -466,7 +390,6 @@
             }
         }
 
-        // --- DOWNLOAD / ENCRYPTION SCRAMBLER ---
         function generateRandomName() {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
             let result = '';
