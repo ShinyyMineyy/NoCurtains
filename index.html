@@ -12,12 +12,11 @@
         body {
             background-color: #050505;
             color: #fff;
-            font-family: 'Space Mono', monospace; /* Applied new font globally */
+            font-family: 'Space Mono', monospace;
             margin: 0; padding: 0;
             overflow-x: hidden;
         }
 
-        /* Subtle CRT Monitor Scanlines */
         body::before {
             content: " ";
             display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
@@ -36,16 +35,19 @@
             border-left: 2px solid #333; padding-left: 15px; text-align: left;
         }
 
-        /* ENHANCED TOTAL EVIDENCE BOX */
+        /* --- THE UPGRADE: LIGHT GRAY MEDIAS BOX --- */
         .site-stats-container { display: flex; justify-content: center; margin-top: 30px; }
         .stat-box {
-            background: rgba(0, 255, 0, 0.03); border: 1px solid rgba(0, 255, 0, 0.15);
-            padding: 10px 25px; border-radius: 4px; color: #666; font-size: 0.85rem; 
-            display: flex; align-items: center; gap: 12px; letter-spacing: 2px;
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.05); transition: all 0.3s ease;
+            background: #e0e0e0; /* Light Gray Background */
+            border: 1px solid #cccccc;
+            padding: 10px 25px; border-radius: 4px; 
+            color: #111; /* Dark text for perfect readability */
+            font-size: 0.85rem; display: flex; align-items: center; gap: 12px; letter-spacing: 2px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6); transition: all 0.3s ease;
+            font-weight: bold;
         }
-        .stat-box:hover { border-color: rgba(0, 255, 0, 0.4); background: rgba(0, 255, 0, 0.08); box-shadow: 0 0 20px rgba(0, 255, 0, 0.15); }
-        .stat-value { color: #00ff00; font-size: 1.2rem; font-weight: bold; text-shadow: 0 0 10px rgba(0,255,0,0.5); }
+        .stat-box:hover { background: #ffffff; border-color: #aaaaaa; }
+        .stat-value { color: #000; font-size: 1.2rem; font-weight: bold; }
 
         .info-note {
             display: inline-flex; align-items: center; justify-content: center;
@@ -59,7 +61,7 @@
         }
         @keyframes pulse-red { 0% { opacity: 0.2; } 50% { opacity: 1; box-shadow: 0 0 12px #ff4444; } 100% { opacity: 0.2; } }
 
-        /* --- ENHANCED NAVIGATION TABS --- */
+        /* --- NAVIGATION TABS --- */
         .tabs { display: flex; justify-content: center; gap: 15px; margin: 40px 0; flex-wrap: wrap; }
         .tab-btn {
             background: transparent; color: #555; border: 1px solid transparent;
@@ -73,7 +75,7 @@
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         .hidden { display: none !important; }
 
-        /* --- MEDIA GRID & STAGGERED REVEAL ANIMATION --- */
+        /* --- MEDIA GRID & PERFORMANCE OPTIMIZED ANIMATION --- */
         .grid-container {
             display: grid; 
             grid-template-columns: repeat(5, 1fr); 
@@ -88,10 +90,10 @@
         @media (max-width: 800px) { .grid-container { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 500px) { .grid-container { grid-template-columns: repeat(1, 1fr); } }
 
-        /* New Decryption Animation */
-        @keyframes decryptReveal {
-            from { opacity: 0; transform: translateY(30px) scale(0.98); filter: blur(4px); }
-            to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        /* THE UPGRADE: Ultra-lightweight, lag-free fade-in */
+        @keyframes smoothFade {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .media-card {
@@ -102,8 +104,8 @@
             overflow: hidden; 
             aspect-ratio: 9 / 16; 
             cursor: pointer; 
-            /* Added backwards fill mode so cards stay invisible until their delay hits */
-            animation: decryptReveal 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+            /* Simple, fast animation with no GPU lag */
+            animation: smoothFade 0.3s ease-out forwards;
             transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.4s ease, box-shadow 0.4s ease;
             z-index: 1;
         }
@@ -179,7 +181,7 @@
 
         <div class="site-stats-container">
             <div class="stat-box">
-                <span>[ TOTAL_EVIDENCE ]</span>
+                <span>[ TOTAL_MEDIAS ]</span>
                 <span class="stat-value" id="total-media-count">...</span>
             </div>
         </div>
@@ -306,9 +308,7 @@
                 card.className = 'media-card';
                 card.oncontextmenu = () => false; 
                 
-                // --- THE UPGRADE: Dynamic Staggered Reveal Animation ---
-                // This makes the cards ripple onto the screen sequentially.
-                card.style.animationDelay = `${index * 0.05}s`;
+                // THE UPGRADE: Completely removed the heavy JavaScript inline delays.
 
                 let mediaElement = '';
 
