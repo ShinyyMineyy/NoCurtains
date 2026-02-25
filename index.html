@@ -35,13 +35,13 @@
             border-left: 2px solid #333; padding-left: 15px; text-align: left;
         }
 
-        /* --- THE UPGRADE: LIGHT GRAY MEDIAS BOX --- */
+        /* --- LIGHT GRAY MEDIAS BOX --- */
         .site-stats-container { display: flex; justify-content: center; margin-top: 30px; }
         .stat-box {
-            background: #e0e0e0; /* Light Gray Background */
+            background: #e0e0e0; 
             border: 1px solid #cccccc;
             padding: 10px 25px; border-radius: 4px; 
-            color: #111; /* Dark text for perfect readability */
+            color: #111; 
             font-size: 0.85rem; display: flex; align-items: center; gap: 12px; letter-spacing: 2px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6); transition: all 0.3s ease;
             font-weight: bold;
@@ -75,12 +75,12 @@
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         .hidden { display: none !important; }
 
-        /* --- MEDIA GRID & PERFORMANCE OPTIMIZED ANIMATION --- */
+        /* --- MEDIA GRID (ZERO ANIMATION = ZERO LAG) --- */
         .grid-container {
             display: grid; 
             grid-template-columns: repeat(5, 1fr); 
             gap: 20px; 
-            padding: 0 40px 80px 40px; 
+            padding: 0 40px 40px 40px; 
             max-width: 1600px; 
             margin: 0 auto;
         }
@@ -90,12 +90,6 @@
         @media (max-width: 800px) { .grid-container { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 500px) { .grid-container { grid-template-columns: repeat(1, 1fr); } }
 
-        /* THE UPGRADE: Ultra-lightweight, lag-free fade-in */
-        @keyframes smoothFade {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
         .media-card {
             position: relative; 
             background-color: #0a0a0a; 
@@ -104,8 +98,7 @@
             overflow: hidden; 
             aspect-ratio: 9 / 16; 
             cursor: pointer; 
-            /* Simple, fast animation with no GPU lag */
-            animation: smoothFade 0.3s ease-out forwards;
+            /* THE FIX: Load animations totally removed. Hover transition kept intact for UI feel. */
             transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.4s ease, box-shadow 0.4s ease;
             z-index: 1;
         }
@@ -200,7 +193,12 @@
         </nav>
         
         <div id="loading" class="loading-state">SCANNING DIRECTORIES...</div>
+        
         <div id="media-grid" class="grid-container hidden"></div>
+
+        <div id="load-more-trigger" class="loading-state hidden" style="margin-bottom: 60px; margin-top: 0;">
+            [ DECRYPTING MORE FILES... ]
+        </div>
 
         <div id="media-modal" class="modal hidden">
             <div class="modal-content">
@@ -224,9 +222,14 @@
         let siteData = { videos: [], pictures: [], reels: [] };
         let currentTab = 'videos';
         let currentMediaIndex = 0; 
+        
+        // --- NEW: INFINITE SCROLL VARIABLES ---
+        let currentPage = 1;
+        const ITEMS_PER_PAGE = 15;
 
         const gridContainer = document.getElementById('media-grid');
         const loadingState = document.getElementById('loading');
+        const loadMoreTrigger = document.getElementById('load-more-trigger');
         const tabButtons = document.querySelectorAll('.tab-btn');
         const modal = document.getElementById('media-modal');
         const modalBody = document.getElementById('modal-body');
@@ -254,6 +257,7 @@
         async function initializeDatabase() {
             loadingState.classList.remove('hidden');
             gridContainer.classList.add('hidden');
+            loadMoreTrigger.classList.add('hidden');
 
             const [videoData, pictureData, reelsDataRaw] = await Promise.all([
                 fetchDirectory(API_VIDEOS),
@@ -291,24 +295,36 @@
             loadingState.classList.add('hidden');
             gridContainer.classList.remove('hidden');
             
-            renderMedia(currentTab);
+            // Initial render
+            renderMedia(currentTab, true);
         }
 
-        function renderMedia(category) {
-            gridContainer.innerHTML = ''; 
-            const items = siteData[category];
+        // --- THE UPGRADE: INFINITE SCROLL RENDER LOGIC ---
+        function renderMedia(category, isReset = false) {
+            const allItems = siteData[category];
 
-            if (!items || items.length === 0) {
+            if (isReset) {
+                gridContainer.innerHTML = ''; 
+                currentPage = 1;
+            }
+
+            if (!allItems || allItems.length === 0) {
                 gridContainer.innerHTML = '<p style="color: #444; text-align: center; grid-column: 1/-1;">[ NO ASSETS FOUND IN DIRECTORY ]</p>';
+                loadMoreTrigger.classList.add('hidden');
                 return;
             }
 
-            items.forEach((item, index) => {
+            // Slice the array to only grab the next 15 items
+            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+            const itemsToRender = allItems.slice(startIndex, endIndex);
+
+            itemsToRender.forEach((item, loopIndex) => {
+                const globalIndex = startIndex + loopIndex; // Tracks exact modal position
+                
                 const card = document.createElement('div');
                 card.className = 'media-card';
                 card.oncontextmenu = () => false; 
-                
-                // THE UPGRADE: Completely removed the heavy JavaScript inline delays.
 
                 let mediaElement = '';
 
@@ -336,26 +352,43 @@
                         }
                         
                         previewInterval = setInterval(() => {
-                            if (vid.currentTime >= 3) {
-                                vid.currentTime = 0; 
-                            }
+                            if (vid.currentTime >= 3) { vid.currentTime = 0; }
                         }, 100); 
                     });
                     
                     card.addEventListener('mouseleave', () => {
                         clearInterval(previewInterval);
-                        vid.pause();
-                        vid.currentTime = 0; 
-                        vid.playbackRate = 1.0; 
+                        vid.pause(); vid.currentTime = 0; vid.playbackRate = 1.0; 
                     });
                 }
 
                 card.addEventListener('click', () => {
-                    currentMediaIndex = index;
+                    currentMediaIndex = globalIndex; // Connects click to full array
                     openModal();
                 });
             });
+
+            // Show or hide the "Decrypting More Files..." trigger
+            if (endIndex >= allItems.length) {
+                loadMoreTrigger.classList.add('hidden');
+            } else {
+                loadMoreTrigger.classList.remove('hidden');
+            }
         }
+
+        // --- THE UPGRADE: OBSERVER WATCHING THE BOTTOM OF THE PAGE ---
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !loadMoreTrigger.classList.contains('hidden')) {
+                // If the user scrolls to the bottom trigger, add a fake 0.5s delay to simulate a database call, then render
+                setTimeout(() => {
+                    currentPage++;
+                    renderMedia(currentTab, false);
+                }, 500);
+            }
+        }, { rootMargin: "100px" });
+
+        // Start watching the loading text
+        observer.observe(loadMoreTrigger);
 
         function openModal() {
             modal.classList.remove('hidden');
@@ -370,18 +403,11 @@
             if (currentTab === 'videos') {
                 modalBody.innerHTML = `<video src="${currentItem.url}" controls controlsList="nodownload" autoplay oncontextmenu="return false;"></video>`;
             } else if (currentTab === 'reels') {
-                
                 modalBody.innerHTML = `
                     <div style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px;">
                         <div class="premium-split-view">
-                            <div class="premium-media-card">
-                                <div class="premium-media-header" style="color: #ff4444;">[ BASE_IMAGE ]</div>
-                                <div class="premium-media-body"><img src="${currentItem.imageUrl}" alt="Base Image" oncontextmenu="return false;"></div>
-                            </div>
-                            <div class="premium-media-card">
-                                <div class="premium-media-header" style="color: #00ff00;">[ GENERATED_VIDEO ]</div>
-                                <div class="premium-media-body"><video src="${currentItem.videoUrl}" controls controlsList="nodownload" loop muted playsinline autoplay oncontextmenu="return false;"></video></div>
-                            </div>
+                            <div class="premium-media-card"><div class="premium-media-header" style="color: #ff4444;">[ BASE_IMAGE ]</div><div class="premium-media-body"><img src="${currentItem.imageUrl}" alt="Base Image" oncontextmenu="return false;"></div></div>
+                            <div class="premium-media-card"><div class="premium-media-header" style="color: #00ff00;">[ GENERATED_VIDEO ]</div><div class="premium-media-body"><video src="${currentItem.videoUrl}" controls controlsList="nodownload" loop muted playsinline autoplay oncontextmenu="return false;"></video></div></div>
                         </div>
                         <div id="source-link-container" style="min-height: 30px;"><span style="color: #444;">[ DECRYPTING SOURCE LINK... ]</span></div>
                     </div>
@@ -392,9 +418,7 @@
                         const response = await fetch(currentItem.textUrl);
                         const urlText = await response.text();
                         document.getElementById('source-link-container').innerHTML = `
-                            <a href="${urlText.trim()}" target="_blank" style="color: #00ff00; text-decoration: none; border-bottom: 1px solid #00ff00; padding-bottom: 2px;">
-                                [ VIEW_ORIGINAL_SOURCE ]
-                            </a>
+                            <a href="${urlText.trim()}" target="_blank" style="color: #00ff00; text-decoration: none; border-bottom: 1px solid #00ff00; padding-bottom: 2px;">[ VIEW_ORIGINAL_SOURCE ]</a>
                         `;
                     } catch (e) { document.getElementById('source-link-container').innerHTML = '<span style="color: #ff4444;">[ SOURCE DECRYPTION FAILED ]</span>'; }
                 } else { document.getElementById('source-link-container').innerHTML = '<span style="color: #444;">[ NO SOURCE DATA FOUND ]</span>'; }
@@ -406,26 +430,18 @@
 
         function generateRandomName() {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-            let result = '';
-            for (let i = 0; i < 7; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
-            return result;
+            let result = ''; for (let i = 0; i < 7; i++) result += chars.charAt(Math.floor(Math.random() * chars.length)); return result;
         }
 
         downloadBtn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            downloadBtn.innerText = "[ ENCRYPTING... ]";
-            
+            e.stopPropagation(); downloadBtn.innerText = "[ ENCRYPTING... ]";
             const currentItem = siteData[currentTab][currentMediaIndex];
             const targetUrl = currentTab === 'reels' ? currentItem.videoUrl : currentItem.url;
-            const fileName = currentItem.name || "video.mp4";
-            const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
-            const randomFileName = generateRandomName() + fileExtension;
-
+            const fileName = currentItem.name || "video.mp4"; const fileExtension = fileName.substring(fileName.lastIndexOf('.')); const randomFileName = generateRandomName() + fileExtension;
             try {
                 const response = await fetch(targetUrl); const blob = await response.blob(); const blobUrl = window.URL.createObjectURL(blob);
                 const a = document.createElement('a'); a.style.display = 'none'; a.href = blobUrl; a.download = randomFileName; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(blobUrl); a.remove();
             } catch (err) { const a = document.createElement('a'); a.href = targetUrl; a.download = randomFileName; a.target = "_blank"; a.click(); }
-            
             setTimeout(() => { downloadBtn.innerText = "[ SECURE_DOWNLOAD ]"; }, 1500);
         });
 
@@ -434,7 +450,16 @@
         function handleKeyboardNav(e) { const items = siteData[currentTab]; if (e.key === 'ArrowRight') { currentMediaIndex = (currentMediaIndex + 1) % items.length; loadMediaIntoModal(); } else if (e.key === 'ArrowLeft') { currentMediaIndex = (currentMediaIndex - 1 + items.length) % items.length; loadMediaIntoModal(); } else if (e.key === 'Escape') { closeModal(); } }
         function closeModal() { modal.classList.add('hidden'); modalBody.innerHTML = ''; document.removeEventListener('keydown', handleKeyboardNav); }
         closeBtn.addEventListener('click', closeModal); modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-        tabButtons.forEach(button => { button.addEventListener('click', (e) => { tabButtons.forEach(btn => btn.classList.remove('active')); e.target.classList.add('active'); currentTab = e.target.getAttribute('data-tab'); renderMedia(currentTab); }); });
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                currentTab = e.target.getAttribute('data-tab');
+                // The 'true' forces the grid to reset back to page 1
+                renderMedia(currentTab, true);
+            });
+        });
 
         initializeDatabase();
     </script>
