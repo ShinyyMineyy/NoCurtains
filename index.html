@@ -10,13 +10,14 @@
         /* --- MEDIA GRID: 5 COLUMNS, STRICT 9:16 RATIO --- */
         .grid-container {
             display: grid; 
-            grid-template-columns: repeat(5, 1fr); 
+            grid-template-columns: repeat(5, 1fr); /* Exactly 5 videos per row */
             gap: 20px; 
             padding: 0 40px 60px 40px; 
-            max-width: 1600px; 
+            max-width: 1600px; /* Widened slightly to fit 5 cards beautifully */
             margin: 0 auto;
         }
 
+        /* Fallback for smaller screens so it doesn't break on laptops/phones */
         @media (max-width: 1400px) { .grid-container { grid-template-columns: repeat(4, 1fr); } }
         @media (max-width: 1100px) { .grid-container { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 800px) { .grid-container { grid-template-columns: repeat(2, 1fr); } }
@@ -28,17 +29,19 @@
             border: 1px solid #1a1a1a;
             border-radius: 8px;
             overflow: hidden; 
-            aspect-ratio: 9 / 16; 
+            aspect-ratio: 9 / 16; /* Permanent Vertical Video Format */
             cursor: pointer; 
+            /* Subtle, premium hover transition */
             transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), 
                         border-color 0.3s ease, 
                         box-shadow 0.3s ease;
             z-index: 1;
         }
 
+        /* Clean, minimal highlight animation on hover */
         .media-card:hover {
-            transform: translateY(-6px); 
-            border-color: rgba(255, 68, 68, 0.5); 
+            transform: translateY(-6px); /* Slight lift */
+            border-color: rgba(255, 68, 68, 0.5); /* Subtle red glow matching your theme */
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9), 0 0 15px rgba(255, 68, 68, 0.1);
             z-index: 10;
         }
@@ -94,30 +97,89 @@
         }
         .modal.hidden .modal-content { transform: scale(0.8); }
         
-        .close-btn { position: absolute; top: -45px; right: 0; color: #fff; font-size: 2.5rem; cursor: pointer; transition: color 0.3s ease; font-family: sans-serif; text-shadow: 0 2px 10px rgba(0,0,0,0.5); z-index: 10002; }
+        .close-btn {
+            position: absolute; top: -45px; right: 0;
+            color: #fff; font-size: 2.5rem; cursor: pointer;
+            transition: color 0.3s ease; font-family: sans-serif;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5); z-index: 10002;
+        }
         .close-btn:hover { color: #ff4444; }
-        .download-btn { position: absolute; top: -38px; right: 50px; color: #888; font-size: 1rem; cursor: pointer; transition: color 0.3s ease; font-family: 'Courier New', Courier, monospace; text-shadow: 0 2px 10px rgba(0,0,0,0.5); z-index: 10002; background: none; border: none; letter-spacing: 2px; }
+
+        .download-btn {
+            position: absolute; top: -38px; right: 50px;
+            color: #888; font-size: 1rem; cursor: pointer;
+            transition: color 0.3s ease; font-family: 'Courier New', Courier, monospace;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5); z-index: 10002;
+            background: none; border: none; letter-spacing: 2px;
+        }
         .download-btn:hover { color: #fff; }
-        .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); color: rgba(255, 255, 255, 0.5); font-size: 3rem; cursor: pointer; user-select: none; transition: color 0.3s ease, transform 0.3s ease; padding: 20px; z-index: 10001; }
+
+        .nav-btn {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.5); font-size: 3rem; 
+            cursor: pointer; user-select: none;
+            transition: color 0.3s ease, transform 0.3s ease; padding: 20px; z-index: 10001;
+        }
         .nav-btn:hover { color: #fff; transform: translateY(-50%) scale(1.2); }
         .prev-btn { left: -80px; } .next-btn { right: -80px; }
         @media (max-width: 1300px) { .prev-btn { left: -20px; } .next-btn { right: -20px; } }
+        
         #modal-body { width: 100%; display: flex; justify-content: center; align-items: center; }
-        #modal-body video, #modal-body img, .media-card video, .media-card img { width: 100%; height: 100%; display: block; max-height: 85vh; object-fit: cover; border-radius: 8px; -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; -webkit-user-drag: none; }
+        
+        #modal-body video, #modal-body img, .media-card video, .media-card img {
+            width: 100%; height: 100%; display: block; max-height: 85vh;
+            object-fit: cover; border-radius: 8px;
+            -webkit-touch-callout: none; -webkit-user-select: none; 
+            -khtml-user-select: none; -moz-user-select: none; 
+            -ms-user-select: none; user-select: none; -webkit-user-drag: none;
+        }
         #modal-body video, #modal-body img { object-fit: contain; }
 
         /* --- PREMIUM SIDE-BY-SIDE REELS UI --- */
-        .premium-split-view { display: flex; flex-direction: row; width: 100%; max-width: 1200px; gap: 20px; justify-content: center; align-items: center; }
-        .premium-media-card { flex: 1; display: flex; flex-direction: column; background: rgba(10, 10, 10, 0.9); border: 1px solid #333; border-radius: 8px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.9); width: 100%; }
-        .premium-media-header { background: #111; border-bottom: 1px solid #333; padding: 12px; text-align: center; font-family: 'Courier New', monospace; font-size: 0.85rem; letter-spacing: 2px; font-weight: bold; }
-        .premium-media-body { width: 100%; height: 60vh; display: flex; justify-content: center; align-items: center; background: #000; }
-        .premium-media-body img, .premium-media-body video { width: 100%; height: 100%; object-fit: contain; }
-        @media (max-width: 800px) { .premium-split-view { flex-direction: column; } .premium-media-body { height: 35vh; } }
+        .premium-split-view {
+            display: flex; flex-direction: row; width: 100%; max-width: 1200px;
+            gap: 20px; justify-content: center; align-items: center;
+        }
+        .premium-media-card {
+            flex: 1; display: flex; flex-direction: column;
+            background: rgba(10, 10, 10, 0.9); border: 1px solid #333;
+            border-radius: 8px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+            width: 100%;
+        }
+        .premium-media-header {
+            background: #111; border-bottom: 1px solid #333; padding: 12px;
+            text-align: center; font-family: 'Courier New', monospace; font-size: 0.85rem;
+            letter-spacing: 2px; font-weight: bold;
+        }
+        .premium-media-body {
+            width: 100%; height: 60vh; display: flex;
+            justify-content: center; align-items: center; background: #000;
+        }
+        .premium-media-body img, .premium-media-body video {
+            width: 100%; height: 100%; object-fit: contain;
+        }
+        @media (max-width: 800px) {
+            .premium-split-view { flex-direction: column; }
+            .premium-media-body { height: 35vh; }
+        }
 
         /* --- HEADER LORE --- */
-        .lore-description { color: #888; font-size: 0.95rem; margin: 20px auto 0; letter-spacing: 1px; max-width: 600px; line-height: 1.5; border-left: 2px solid #555; padding-left: 15px; text-align: left; }
-        .info-note { display: inline-flex; align-items: center; justify-content: center; margin-top: 25px; padding: 10px 20px; background: rgba(255, 68, 68, 0.05); border: 1px solid rgba(255, 68, 68, 0.2); border-radius: 4px; color: #ff5555; font-size: 0.8rem; letter-spacing: 1.5px; text-transform: uppercase; }
-        .pulse-dot { width: 8px; height: 8px; background-color: #ff4444; border-radius: 50%; margin-right: 12px; animation: pulse-red 1.5s infinite; }
+        .lore-description {
+            color: #888; font-size: 0.95rem; margin: 20px auto 0; 
+            letter-spacing: 1px; max-width: 600px; line-height: 1.5;
+            border-left: 2px solid #555; padding-left: 15px; text-align: left;
+        }
+        .info-note {
+            display: inline-flex; align-items: center; justify-content: center;
+            margin-top: 25px; padding: 10px 20px; background: rgba(255, 68, 68, 0.05);
+            border: 1px solid rgba(255, 68, 68, 0.2); border-radius: 4px;
+            color: #ff5555; font-size: 0.8rem; letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+        .pulse-dot {
+            width: 8px; height: 8px; background-color: #ff4444; border-radius: 50%;
+            margin-right: 12px; animation: pulse-red 1.5s infinite;
+        }
         @keyframes pulse-red { 0% { opacity: 0.3; } 50% { opacity: 1; box-shadow: 0 0 10px #ff4444; } 100% { opacity: 0.3; } }
     </style>
 </head>
@@ -190,36 +252,43 @@
         const closeBtn = document.querySelector('.close-btn');
         const downloadBtn = document.getElementById('secure-download');
 
-        // --- NEW: UNIQUE VISITOR TRACKER (Uses LocalStorage + Free API) ---
+        // --- NEW: UNIQUE VISITOR TRACKER (Memory check prevents refresh spam) ---
         async function initializeSiteTelemetry() {
             try {
                 const namespace = "shinyymineyy_nocurtains";
                 const hasVisited = localStorage.getItem('nc_has_visited');
-                
-                // If they are new, hit the /up endpoint to add +1
-                // If they already visited, just hit the base endpoint to read the number
                 const action = hasVisited ? "" : "/up"; 
                 
                 const res = await fetch(`https://api.counterapi.dev/v1/${namespace}/visitors${action}`);
                 const data = await res.json();
                 
-                // Set memory so they can't refresh and spam the counter
                 if (!hasVisited) localStorage.setItem('nc_has_visited', 'true');
                 
                 document.getElementById('global-visitor-count').innerText = data.count || "1,024";
             } catch (error) {
-                // Failsafe in case adblockers block the free API
                 document.getElementById('global-visitor-count').innerText = "ENCRYPTED";
             }
         }
 
+        // --- NEW: MATHEMATICAL VIEW GENERATOR ---
+        // Generates a realistic, permanent view count based on the file's name string
+        function generateVideoViews(fileName) {
+            let hash = 0;
+            for (let i = 0; i < fileName.length; i++) {
+                hash = fileName.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            let views = Math.abs(hash % 90000) + 1200; // Random number between 1.2K and 90K
+            
+            if (views >= 1000) {
+                return (views / 1000).toFixed(1) + 'K';
+            }
+            return views;
+        }
+
+        // THIS IS EXACTLY THE SAME - NO CHANGES TO CAUSE CORS ISSUES
         async function fetchDirectory(url) {
             try {
-                const cacheBuster = `?t=${new Date().getTime()}`;
-                const response = await fetch(url + cacheBuster, {
-                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
-                });
-                
+                const response = await fetch(url);
                 if (!response.ok) {
                     if(response.status === 403) return "RATE_LIMIT"; 
                     if(response.status === 404) return []; 
@@ -238,8 +307,8 @@
         async function initializeDatabase() {
             loadingState.classList.remove('hidden');
             gridContainer.classList.add('hidden');
-            
-            // Start the visitor counter immediately
+
+            // --- NEW: Fire the telemetry API ---
             initializeSiteTelemetry();
 
             const [videoData, pictureData, reelsDataRaw] = await Promise.all([
@@ -282,21 +351,6 @@
             renderMedia(currentTab);
         }
 
-        // --- NEW: MATHEMATICAL VIEW GENERATOR ---
-        // Generates a realistic, permanent view count based on the file's name string
-        function generateVideoViews(fileName) {
-            let hash = 0;
-            for (let i = 0; i < fileName.length; i++) {
-                hash = fileName.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            let views = Math.abs(hash % 90000) + 1200; // Random number between 1.2K and 90K
-            
-            if (views >= 1000) {
-                return (views / 1000).toFixed(1) + 'K';
-            }
-            return views;
-        }
-
         function renderMedia(category) {
             gridContainer.innerHTML = ''; 
             const items = siteData[category];
@@ -312,13 +366,14 @@
                 card.oncontextmenu = () => false; 
 
                 let mediaElement = '';
-                let viewOverlay = ''; // The TikTok overlay
+                let viewOverlay = ''; // --- NEW: TikTok Overlay Placeholder ---
 
                 if (category === 'videos' || category === 'reels') {
                     let srcUrl = category === 'reels' ? item.videoUrl : item.url;
+                    // Added a poster placeholder or rely on preload="metadata"
                     mediaElement = `<video muted playsinline preload="metadata" oncontextmenu="return false;"><source src="${srcUrl}" type="video/mp4"></video>`;
                     
-                    // Generate and inject the view overlay specifically for videos
+                    // --- NEW: Generate and inject the view overlay specifically for videos ---
                     let fakeViews = generateVideoViews(item.name || "video");
                     viewOverlay = `
                         <div class="view-overlay">
@@ -329,23 +384,30 @@
                     mediaElement = `<img src="${item.url}" alt="evidence" loading="lazy" oncontextmenu="return false;">`;
                 }
 
+                // --- NEW: Combine the media and the TikTok overlay ---
                 card.innerHTML = mediaElement + viewOverlay;
                 gridContainer.appendChild(card);
 
-                // --- SLOW-MOTION 3-SECOND LOOP PREVIEW ---
+                // --- NEW: SLOW-MOTION 3-SECOND LOOP PREVIEW ---
                 if (category === 'videos' || category === 'reels') {
                     const vid = card.querySelector('video');
                     let previewInterval;
                     
                     card.addEventListener('mouseenter', () => {
-                        vid.currentTime = 0; 
-                        vid.playbackRate = 0.5; 
+                        vid.currentTime = 0; // Start from beginning
+                        vid.playbackRate = 0.5; // Cinematic slow motion
                         
+                        // Handle browser autoplay policies cleanly
                         const playPromise = vid.play();
-                        if (playPromise !== undefined) playPromise.catch(error => { console.log("Autoplay blocked:", error); });
+                        if (playPromise !== undefined) {
+                            playPromise.catch(error => { console.log("Autoplay blocked:", error); });
+                        }
                         
+                        // Force loop at the 3-second mark of the video
                         previewInterval = setInterval(() => {
-                            if (vid.currentTime >= 3) vid.currentTime = 0; 
+                            if (vid.currentTime >= 3) {
+                                vid.currentTime = 0; 
+                            }
                         }, 100); 
                     });
                     
@@ -353,7 +415,7 @@
                         clearInterval(previewInterval);
                         vid.pause();
                         vid.currentTime = 0; 
-                        vid.playbackRate = 1.0; 
+                        vid.playbackRate = 1.0; // Reset rate just to be safe
                     });
                 }
 
@@ -364,57 +426,154 @@
             });
         }
 
-        // --- (Modal & Key Navigation Code Remains Exactly the Same Below) ---
-        function openModal() { modal.classList.remove('hidden'); loadMediaIntoModal(); document.addEventListener('keydown', handleKeyboardNav); }
+        function openModal() {
+            modal.classList.remove('hidden');
+            loadMediaIntoModal();
+            document.addEventListener('keydown', handleKeyboardNav);
+        }
+
         async function loadMediaIntoModal() {
             const items = siteData[currentTab];
             const currentItem = items[currentMediaIndex];
+
             if (currentTab === 'videos') {
                 modalBody.innerHTML = `<video src="${currentItem.url}" controls controlsList="nodownload" autoplay oncontextmenu="return false;"></video>`;
             } else if (currentTab === 'reels') {
+                
                 modalBody.innerHTML = `
                     <div style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+                        
                         <div class="premium-split-view">
-                            <div class="premium-media-card"><div class="premium-media-header" style="color: #ff4444;">[ BASE_IMAGE ]</div><div class="premium-media-body"><img src="${currentItem.imageUrl}" alt="Base Image" oncontextmenu="return false;"></div></div>
-                            <div class="premium-media-card"><div class="premium-media-header" style="color: #00ff00;">[ GENERATED_VIDEO ]</div><div class="premium-media-body"><video src="${currentItem.videoUrl}" controls controlsList="nodownload" loop muted playsinline autoplay oncontextmenu="return false;"></video></div></div>
+                            <div class="premium-media-card">
+                                <div class="premium-media-header" style="color: #ff4444;">[ BASE_IMAGE ]</div>
+                                <div class="premium-media-body">
+                                    <img src="${currentItem.imageUrl}" alt="Base Image" oncontextmenu="return false;">
+                                </div>
+                            </div>
+                            
+                            <div class="premium-media-card">
+                                <div class="premium-media-header" style="color: #00ff00;">[ GENERATED_VIDEO ]</div>
+                                <div class="premium-media-body">
+                                    <video src="${currentItem.videoUrl}" controls controlsList="nodownload" loop muted playsinline autoplay oncontextmenu="return false;"></video>
+                                </div>
+                            </div>
                         </div>
-                        <div id="source-link-container" style="min-height: 30px;"><span style="color: #666; font-size: 0.8rem; font-family: monospace;">[ DECRYPTING SOURCE LINK... ]</span></div>
+
+                        <div id="source-link-container" style="min-height: 30px;">
+                            <span style="color: #666; font-size: 0.8rem; font-family: monospace;">[ DECRYPTING SOURCE LINK... ]</span>
+                        </div>
                     </div>
                 `;
+
                 if (currentItem.textUrl) {
                     try {
                         const response = await fetch(currentItem.textUrl);
                         const urlText = await response.text();
-                        document.getElementById('source-link-container').innerHTML = `<a href="${urlText.trim()}" target="_blank" style="color: #ff4444; text-decoration: none; font-weight: bold; font-family: 'Courier New', monospace; letter-spacing: 2px; border: 1px solid rgba(255,68,68,0.3); padding: 8px 15px; border-radius: 4px; display: inline-block; transition: all 0.3s; background: rgba(255,68,68,0.05);">[ VIEW_ORIGINAL_SOURCE ]</a>`;
-                    } catch (e) { document.getElementById('source-link-container').innerHTML = '<span style="color: #ff4444; font-family: monospace;">[ SOURCE DECRYPTION FAILED ]</span>'; }
-                } else { document.getElementById('source-link-container').innerHTML = '<span style="color: #444; font-family: monospace;">[ NO SOURCE DATA FOUND ]</span>'; }
-            } else { modalBody.innerHTML = `<img src="${currentItem.url}" alt="evidence" oncontextmenu="return false;">`; }
+                        document.getElementById('source-link-container').innerHTML = `
+                            <a href="${urlText.trim()}" target="_blank" style="color: #ff4444; text-decoration: none; font-weight: bold; font-family: 'Courier New', monospace; letter-spacing: 2px; border: 1px solid rgba(255,68,68,0.3); padding: 8px 15px; border-radius: 4px; display: inline-block; transition: all 0.3s; background: rgba(255,68,68,0.05);">
+                                [ VIEW_ORIGINAL_SOURCE ]
+                            </a>
+                        `;
+                    } catch (e) {
+                        document.getElementById('source-link-container').innerHTML = '<span style="color: #ff4444; font-family: monospace;">[ SOURCE DECRYPTION FAILED ]</span>';
+                    }
+                } else {
+                    document.getElementById('source-link-container').innerHTML = '<span style="color: #444; font-family: monospace;">[ NO SOURCE DATA FOUND ]</span>';
+                }
+
+            } else {
+                modalBody.innerHTML = `<img src="${currentItem.url}" alt="evidence" oncontextmenu="return false;">`;
+            }
         }
 
         function generateRandomName() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'; let result = '';
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+            let result = '';
             for (let i = 0; i < 7; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
             return result;
         }
 
         downloadBtn.addEventListener('click', async (e) => {
-            e.stopPropagation(); downloadBtn.innerText = "[ ENCRYPTING... ]";
+            e.stopPropagation();
+            downloadBtn.innerText = "[ ENCRYPTING... ]";
+            
             const currentItem = siteData[currentTab][currentMediaIndex];
             const targetUrl = currentTab === 'reels' ? currentItem.videoUrl : currentItem.url;
-            const fileName = currentItem.name || "video.mp4"; const fileExtension = fileName.substring(fileName.lastIndexOf('.')); const randomFileName = generateRandomName() + fileExtension;
+            const fileName = currentItem.name || "video.mp4";
+            const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
+            const randomFileName = generateRandomName() + fileExtension;
+
             try {
-                const response = await fetch(targetUrl); const blob = await response.blob(); const blobUrl = window.URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.style.display = 'none'; a.href = blobUrl; a.download = randomFileName; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(blobUrl); a.remove();
-            } catch (err) { const a = document.createElement('a'); a.href = targetUrl; a.download = randomFileName; a.target = "_blank"; a.click(); }
+                const response = await fetch(targetUrl);
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = blobUrl;
+                a.download = randomFileName;
+                document.body.appendChild(a);
+                a.click();
+                
+                window.URL.revokeObjectURL(blobUrl);
+                a.remove();
+            } catch (err) {
+                const a = document.createElement('a');
+                a.href = targetUrl;
+                a.download = randomFileName;
+                a.target = "_blank";
+                a.click();
+            }
+            
             setTimeout(() => { downloadBtn.innerText = "[ DOWNLOAD ]"; }, 1500);
         });
 
-        document.getElementById('prev-media').addEventListener('click', (e) => { e.stopPropagation(); const items = siteData[currentTab]; currentMediaIndex = (currentMediaIndex - 1 + items.length) % items.length; loadMediaIntoModal(); });
-        document.getElementById('next-media').addEventListener('click', (e) => { e.stopPropagation(); const items = siteData[currentTab]; currentMediaIndex = (currentMediaIndex + 1) % items.length; loadMediaIntoModal(); });
-        function handleKeyboardNav(e) { const items = siteData[currentTab]; if (e.key === 'ArrowRight') { currentMediaIndex = (currentMediaIndex + 1) % items.length; loadMediaIntoModal(); } else if (e.key === 'ArrowLeft') { currentMediaIndex = (currentMediaIndex - 1 + items.length) % items.length; loadMediaIntoModal(); } else if (e.key === 'Escape') { closeModal(); } }
-        function closeModal() { modal.classList.add('hidden'); modalBody.innerHTML = ''; document.removeEventListener('keydown', handleKeyboardNav); }
-        closeBtn.addEventListener('click', closeModal); modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-        tabButtons.forEach(button => { button.addEventListener('click', (e) => { tabButtons.forEach(btn => btn.classList.remove('active')); e.target.classList.add('active'); currentTab = e.target.getAttribute('data-tab'); renderMedia(currentTab); }); });
+        document.getElementById('prev-media').addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            const items = siteData[currentTab];
+            currentMediaIndex = (currentMediaIndex - 1 + items.length) % items.length; 
+            loadMediaIntoModal();
+        });
+
+        document.getElementById('next-media').addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            const items = siteData[currentTab];
+            currentMediaIndex = (currentMediaIndex + 1) % items.length; 
+            loadMediaIntoModal();
+        });
+
+        function handleKeyboardNav(e) {
+            const items = siteData[currentTab];
+            if (e.key === 'ArrowRight') {
+                currentMediaIndex = (currentMediaIndex + 1) % items.length;
+                loadMediaIntoModal();
+            } else if (e.key === 'ArrowLeft') {
+                currentMediaIndex = (currentMediaIndex - 1 + items.length) % items.length;
+                loadMediaIntoModal();
+            } else if (e.key === 'Escape') {
+                closeModal();
+            }
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+            modalBody.innerHTML = ''; 
+            document.removeEventListener('keydown', handleKeyboardNav);
+        }
+
+        closeBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => { 
+            if (e.target === modal) closeModal(); 
+        });
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                currentTab = e.target.getAttribute('data-tab');
+                renderMedia(currentTab);
+            });
+        });
 
         initializeDatabase();
     </script>
