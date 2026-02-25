@@ -7,6 +7,8 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='15' fill='%230a0a0a'/><text x='50%' y='50%' font-family='monospace' font-weight='bold' font-size='55' fill='%23ff4444' text-anchor='middle' dominant-baseline='central'>NC</text></svg>">
+    
     <style>
         /* --- GLOBAL STYLES & SCANLINES --- */
         body {
@@ -23,6 +25,29 @@
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
             z-index: 9999; background-size: 100% 2px, 3px 100%; pointer-events: none;
         }
+
+        /* --- THE UPGRADE: 18+ SECURITY GATE --- */
+        #age-gate {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #050505; z-index: 20000; /* Stays above absolutely everything */
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; padding: 20px;
+        }
+        .age-box {
+            background: #0a0a0a; border: 1px solid #222; padding: 40px; border-radius: 8px;
+            max-width: 600px; box-shadow: 0 15px 50px rgba(0,0,0,0.9);
+        }
+        .age-title { color: #ff4444; font-size: 2rem; margin-bottom: 20px; font-weight: bold; letter-spacing: 2px; }
+        .age-desc { color: #888; font-size: 0.95rem; line-height: 1.6; margin-bottom: 35px; letter-spacing: 1px; }
+        .age-btns { display: flex; gap: 20px; justify-content: center; }
+        .age-btn {
+            padding: 12px 35px; font-family: 'Space Mono', monospace; font-size: 1.2rem;
+            cursor: pointer; border: none; border-radius: 4px; font-weight: bold; transition: all 0.3s;
+        }
+        .btn-yes { background: transparent; border: 2px solid #00ff00; color: #00ff00; }
+        .btn-yes:hover { background: rgba(0,255,0,0.1); box-shadow: 0 0 20px rgba(0,255,0,0.2); transform: scale(1.05); }
+        .btn-no { background: transparent; border: 2px solid #ff4444; color: #ff4444; }
+        .btn-no:hover { background: rgba(255,68,68,0.1); box-shadow: 0 0 20px rgba(255,68,68,0.2); transform: scale(1.05); }
 
         /* --- HEADER & LORE --- */
         header { text-align: center; padding: 50px 20px 20px 20px; }
@@ -98,7 +123,6 @@
             overflow: hidden; 
             aspect-ratio: 9 / 16; 
             cursor: pointer; 
-            /* THE FIX: Load animations totally removed. Hover transition kept intact for UI feel. */
             transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.4s ease, box-shadow 0.4s ease;
             z-index: 1;
         }
@@ -164,6 +188,22 @@
 </head>
 <body oncontextmenu="return false;">
     
+    <div id="age-gate">
+        <div class="age-box">
+            <div class="age-title">[ SECURITY CLEARANCE ]</div>
+            <div class="age-desc">
+                WARNING: This site is an adult site.<br>
+                All medias presented here were created by AI.<br>
+                Nothing in this website is real.<br><br>
+                <strong>Are you 18+?</strong>
+            </div>
+            <div class="age-btns">
+                <button class="age-btn btn-yes" id="btn-age-yes">YES</button>
+                <button class="age-btn btn-no" id="btn-age-no">NO</button>
+            </div>
+        </div>
+    </div>
+
     <header>
         <h1 class="logo">NoCurtains.</h1>
         <p class="subtitle">RESTRICTED ACCESS // DATABASE ENTRY</p>
@@ -212,6 +252,67 @@
     </main>
 
     <script>
+        // --- THE UPGRADE: DISCORD WEBHOOK & SECURITY ENGINE ---
+        const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1476325306544689162/pWa3eFZ-IUa3LjVlX8bmwA5X58PXC6jGjNrnpxl4baBS7t__xykQiVh3TGtyFfRN6dNB";
+
+        // Prevent scrolling while gate is active
+        document.body.style.overflow = "hidden";
+
+        // Check if they already verified in this session
+        if (sessionStorage.getItem('nc_age_verified')) {
+            document.getElementById('age-gate').style.display = 'none';
+            document.body.style.overflow = "auto";
+        }
+
+        async function sendDiscordLog(isAdult) {
+            let ipInfo = "IP data hidden or blocked by browser firewall.";
+            
+            // Attempt to grab IP & Location via free API
+            try {
+                const ipRes = await fetch("https://ipapi.co/json/");
+                if (ipRes.ok) {
+                    const ipData = await ipRes.json();
+                    ipInfo = `**IP Address:** ${ipData.ip}\n**Location:** ${ipData.city}, ${ipData.region}, ${ipData.country_name}\n**ISP:** ${ipData.org}`;
+                }
+            } catch (e) {
+                console.log("IP Tracking blocked by client.");
+            }
+
+            const embedData = {
+                title: isAdult ? "🟢 Access Granted (18+)" : "🔴 Access Denied (Under 18)",
+                color: isAdult ? 65280 : 16711680, // Hex codes for Green and Red
+                description: isAdult ? "A user has logged in to the site." : "A user clicked NO and was redirected.",
+                fields: [
+                    { name: "Network Info", value: ipInfo }
+                ],
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                await fetch(DISCORD_WEBHOOK_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ embeds: [embedData] })
+                });
+            } catch (err) { console.error("Webhook failed"); }
+        }
+
+        document.getElementById('btn-age-yes').addEventListener('click', () => {
+            document.getElementById('age-gate').style.display = 'none';
+            document.body.style.overflow = "auto";
+            sessionStorage.setItem('nc_age_verified', 'true'); // Prevents spamming on refresh
+            sendDiscordLog(true);
+        });
+
+        document.getElementById('btn-age-no').addEventListener('click', () => {
+            sendDiscordLog(false);
+            // Flash red rejection screen and redirect
+            document.body.innerHTML = "<div style='display:flex; height:100vh; width:100vw; align-items:center; justify-content:center; background:#000;'><h1 style='color:#ff4444; font-family:monospace; font-size: 2rem; letter-spacing: 5px;'>[ ACCESS DENIED. REDIRECTING... ]</h1></div>";
+            setTimeout(() => { window.location.href = "https://www.google.com"; }, 1500);
+        });
+
+
+        // --- ORIGINAL PIPELINE ENGINE ---
         const GITHUB_USERNAME = "ShinyyMineyy";
         const GITHUB_REPO = "NoCurtains";
         
@@ -223,7 +324,6 @@
         let currentTab = 'videos';
         let currentMediaIndex = 0; 
         
-        // --- NEW: INFINITE SCROLL VARIABLES ---
         let currentPage = 1;
         const ITEMS_PER_PAGE = 15;
 
@@ -295,11 +395,9 @@
             loadingState.classList.add('hidden');
             gridContainer.classList.remove('hidden');
             
-            // Initial render
             renderMedia(currentTab, true);
         }
 
-        // --- THE UPGRADE: INFINITE SCROLL RENDER LOGIC ---
         function renderMedia(category, isReset = false) {
             const allItems = siteData[category];
 
@@ -314,13 +412,12 @@
                 return;
             }
 
-            // Slice the array to only grab the next 15 items
             const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
             const endIndex = startIndex + ITEMS_PER_PAGE;
             const itemsToRender = allItems.slice(startIndex, endIndex);
 
             itemsToRender.forEach((item, loopIndex) => {
-                const globalIndex = startIndex + loopIndex; // Tracks exact modal position
+                const globalIndex = startIndex + loopIndex; 
                 
                 const card = document.createElement('div');
                 card.className = 'media-card';
@@ -363,12 +460,11 @@
                 }
 
                 card.addEventListener('click', () => {
-                    currentMediaIndex = globalIndex; // Connects click to full array
+                    currentMediaIndex = globalIndex; 
                     openModal();
                 });
             });
 
-            // Show or hide the "Decrypting More Files..." trigger
             if (endIndex >= allItems.length) {
                 loadMoreTrigger.classList.add('hidden');
             } else {
@@ -376,10 +472,8 @@
             }
         }
 
-        // --- THE UPGRADE: OBSERVER WATCHING THE BOTTOM OF THE PAGE ---
         const observer = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting && !loadMoreTrigger.classList.contains('hidden')) {
-                // If the user scrolls to the bottom trigger, add a fake 0.5s delay to simulate a database call, then render
                 setTimeout(() => {
                     currentPage++;
                     renderMedia(currentTab, false);
@@ -387,7 +481,6 @@
             }
         }, { rootMargin: "100px" });
 
-        // Start watching the loading text
         observer.observe(loadMoreTrigger);
 
         function openModal() {
@@ -456,7 +549,6 @@
                 tabButtons.forEach(btn => btn.classList.remove('active'));
                 e.target.classList.add('active');
                 currentTab = e.target.getAttribute('data-tab');
-                // The 'true' forces the grid to reset back to page 1
                 renderMedia(currentTab, true);
             });
         });
